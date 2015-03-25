@@ -50,7 +50,7 @@ CREATE TABLE migration_plan (
   source_version VARCHAR(50) NOT NULL,
   target_name VARCHAR(50) NOT NULL,
   target_version VARCHAR(50) NOT NULL,
-  content BLOB NOT NULL,
+  content LONG VARCHAR FOR BIT DATA NOT NULL,
   PRIMARY KEY (tenantid, id)
 );
 CREATE TABLE arch_process_comment(
@@ -120,7 +120,7 @@ CREATE TABLE document (
   filename VARCHAR(255),
   mimetype VARCHAR(255),
   url VARCHAR(1024),
-  content BLOB,
+  content LONG VARCHAR FOR BIT DATA,
   PRIMARY KEY (tenantid, id)
 );
 CREATE TABLE document_mapping (
@@ -481,7 +481,7 @@ CREATE TABLE report (
   provided BOOLEAN,
   lastModificationDate BIGINT NOT NULL,
   screenshot BLOB,
-  content BLOB,
+  content LONG VARCHAR FOR BIT DATA,
   UNIQUE (tenantId, name),
   PRIMARY KEY (tenantId, id)
 );
@@ -618,7 +618,7 @@ CREATE TABLE dependency (
   name VARCHAR(150) NOT NULL,
   description VARCHAR(1024),
   filename VARCHAR(255) NOT NULL,
-  value_ BLOB NOT NULL,
+  value_ LONG VARCHAR FOR BIT DATA NOT NULL,
   UNIQUE (tenantId, name),
   PRIMARY KEY (tenantid, id)
 );
@@ -640,7 +640,7 @@ CREATE TABLE pdependency (
   name VARCHAR(50) NOT NULL UNIQUE,
   description VARCHAR(1024),
   filename VARCHAR(255) NOT NULL,
-  value_ BLOB NOT NULL,
+  value_ LONG VARCHAR FOR BIT DATA NOT NULL,
   PRIMARY KEY (id)
 );
 CREATE INDEX idx_pdependency_name ON pdependency (name);
@@ -838,7 +838,7 @@ CREATE TABLE page (
   lastModificationDate BIGINT NOT NULL,
   lastUpdatedBy BIGINT NOT NULL,
   contentName VARCHAR(50) NOT NULL,
-  content BLOB,
+  content LONG VARCHAR FOR BIT DATA,
   UNIQUE (tenantId, name),
   PRIMARY KEY (tenantId, id)
 );
@@ -937,7 +937,7 @@ CREATE TABLE job_param (
   id BIGINT NOT NULL,
   jobDescriptorId BIGINT NOT NULL,
   key_ VARCHAR(50) NOT NULL,
-  value_ BLOB NOT NULL,
+  value_ LONG VARCHAR FOR BIT DATA NOT NULL,
   PRIMARY KEY (tenantid, id)
 );
 
@@ -958,8 +958,8 @@ CREATE TABLE theme (
   tenantId BIGINT NOT NULL,
   id BIGINT NOT NULL,
   isDefault BOOLEAN NOT NULL,
-  content BLOB NOT NULL,
-  cssContent BLOB,
+  content LONG VARCHAR FOR BIT DATA NOT NULL,
+  cssContent LONG VARCHAR FOR BIT DATA,
   type VARCHAR(50) NOT NULL,
   lastUpdateDate BIGINT NOT NULL,
   CONSTRAINT UK_Theme UNIQUE (tenantId, isDefault, type),
