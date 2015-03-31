@@ -1,4 +1,3 @@
--- ------------------------------------------------ Foreign Keys -----------------------------------------------
 ALTER TABLE actor DROP CONSTRAINT fk_actor_tenantId;
 ALTER TABLE actormember DROP CONSTRAINT fk_actormember_tenantId;
 ALTER TABLE actormember DROP CONSTRAINT fk_actormember_actorId;

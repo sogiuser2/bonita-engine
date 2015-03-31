@@ -84,6 +84,3 @@ DELETE FROM theme;
 DELETE FROM tenant;
 
 DELETE FROM platformCommand;
-
--- do NOT clear directly PLATFORM table, Hibernate needs to update its cache to know the platform has been deleted
- 
