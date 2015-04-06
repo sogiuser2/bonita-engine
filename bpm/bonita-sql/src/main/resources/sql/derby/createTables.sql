@@ -335,7 +335,7 @@ CREATE TABLE flownode_instance (
   PRIMARY KEY (tenantid, id)
 );
 CREATE INDEX idx_fni_rootcontid ON flownode_instance (rootContainerId);
-CREATE INDEX idx_fni_loggroup4 ON flownode_instance (logicalGroup4);
+CREATE INDEX idx_fni_loggroup4 ON flownode_instance (tenantid, logicalGroup4);
 CREATE INDEX idx_fn_lg2_state_tenant_del ON flownode_instance (logicalGroup2, stateName, tenantid);
 
 CREATE TABLE connector_instance (
@@ -370,6 +370,7 @@ CREATE TABLE event_trigger_instance (
   	jobTriggerName VARCHAR(255),
   	PRIMARY KEY (tenantid, id)
 );
+CREATE INDEX idx_event_trigger_instance ON event_trigger_instance (tenantid, eventInstanceId);
 
 CREATE TABLE waiting_event (
 	tenantid BIGINT NOT NULL,
@@ -399,6 +400,7 @@ CREATE TABLE waiting_event (
   	PRIMARY KEY (tenantid, id)
 );
 CREATE INDEX idx_waiting_event ON waiting_event (progress, tenantid, kind, locked, active);
+CREATE INDEX idx_waiting_event2 ON waiting_event (tenantid, parentProcessInstanceId, subProcessId, active);
 
 CREATE TABLE message_instance (
 	tenantid BIGINT NOT NULL,
