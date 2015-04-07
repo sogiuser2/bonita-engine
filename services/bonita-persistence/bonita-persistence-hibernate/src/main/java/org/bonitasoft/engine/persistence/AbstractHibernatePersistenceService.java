@@ -23,10 +23,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-
-import javax.sql.DataSource;
 
 import org.bonitasoft.engine.commons.ClassReflector;
 import org.bonitasoft.engine.commons.EnumToObjectConvertible;
