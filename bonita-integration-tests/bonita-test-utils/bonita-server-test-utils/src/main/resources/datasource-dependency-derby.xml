@@ -10,8 +10,7 @@
 				<prop key="user">${db.user}</prop>
 				<prop key="password">${db.password}</prop>
 				<!--<prop key="URL">${db.url}</prop>-->
-                                <prop key="databaseName">${db.databaseName};${db.databaseOptions}</prop>
-                                
+				<prop key="databaseName">${db.databaseName};${db.databaseOptions}</prop>
 			</props>
 		</property>
 	</bean>
