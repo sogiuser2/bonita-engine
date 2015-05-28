@@ -6,11 +6,14 @@
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="properties">
 			<props>
-				<prop key="db.hibernate.dialect">org.hibernate.dialect.H2Dialect</prop>
-				<prop key="db.datasource.classname">org.h2.jdbcx.JdbcDataSource</prop>
-				<prop key="db.url">jdbc:h2:mem:datamanagement;LOCK_MODE=0;MVCC=TRUE;DB_CLOSE_ON_EXIT=FALSE;IGNORECASE=TRUE;AUTOCOMMIT=OFF;</prop>
+				<prop key="db.hibernate.dialect">org.hibernate.dialect.DerbyTenSevenDialect</prop>
+				<prop key="db.datasource.classname">org.apache.derby.jdbc.EmbeddedXADataSource</prop>
+				<prop key="db.url">jdbc:derby:${bonita.home}/server/platform/work/bonita6_journal;create=true;collation=TERRITORY_BASED:PRIMARY</prop>
 				<prop key="db.user">sa</prop>
-				<prop key="db.password"></prop>
+                <prop key="db.password"></prop>
+                <prop key="db.databaseName">${bonita.home}/server/platform/work/bonita6_journal</prop>
+                <prop key="db.databaseOptions">create=true;collation=TERRITORY_BASED:PRIMARY</prop>
+
 			</props>
 		</property>
 	</bean>
@@ -20,7 +23,9 @@
 			<props>
 				<prop key="user">${db.user}</prop>
 				<prop key="password">${db.password}</prop>
-				<prop key="URL">${db.url}</prop>
+<!--				<prop key="URL">${db.url}</prop> -->
+                <prop key="databaseName">${db.databaseName};${db.databaseOptions}</prop>
+
 			</props>
 		</property>
 	</bean>

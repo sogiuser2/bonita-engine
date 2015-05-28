@@ -116,6 +116,17 @@
         </property>
     </bean>
 
+    <!-- Derby -->
+    <bean id="derby.properties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="properties">
+            <props>
+                <prop key="user">${derby.db.user}</prop>
+                <prop key="password">${derby.db.password}</prop>
+                <prop key="databaseName">${derby.db.database.name};${derby.db.database.options}</prop>
+            </props>
+        </property>
+    </bean>
+
     <!--  Bitronix Transaction Manager embedded configuration -->
     <bean id="btmConfig" factory-method="getConfiguration" class="bitronix.tm.TransactionManagerServices">
         <property name="serverId" value="btm-bonita" />
