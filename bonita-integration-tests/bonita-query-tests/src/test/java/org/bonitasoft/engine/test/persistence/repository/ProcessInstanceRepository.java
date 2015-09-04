@@ -152,4 +152,11 @@ public class ProcessInstanceRepository extends TestRepository {
         return namedQuery.list();
     }
 
+    @SuppressWarnings("unchecked")
+    public List<SProcessInstance> searchOpenProcessInstancesInvolvingUser(final long userId) {
+        getSession().enableFilter("tenantFilter").setParameter("tenantId", PersistentObjectBuilder.DEFAULT_TENANT_ID);
+        Query namedQuery = getNamedQuery("searchSProcessInstanceInvolvingUser");
+        namedQuery.setParameter("userId", userId);
+        return namedQuery.list();
+    }
 }

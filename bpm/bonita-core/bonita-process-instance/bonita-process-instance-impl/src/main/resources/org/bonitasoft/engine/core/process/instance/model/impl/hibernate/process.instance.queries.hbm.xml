@@ -107,6 +107,7 @@
 		AND a.terminal = FALSE
 	</query>
 
+	
 	<query name="getPendingUserTasks">
 		SELECT a
 		FROM org.bonitasoft.engine.core.process.instance.model.impl.SHumanTaskInstanceImpl AS a
@@ -1245,8 +1246,8 @@
 	<query name="searchSProcessInstanceInvolvingUser">
 		select DISTINCT p
 		FROM org.bonitasoft.engine.core.process.instance.model.impl.SProcessInstanceImpl AS p
-		WHERE (EXISTS 
-				(SELECT at.id 
+		WHERE (EXISTS
+				(SELECT at.id
 					FROM org.bonitasoft.engine.core.process.instance.model.archive.impl.SAHumanTaskInstanceImpl AS at
 					WHERE (at.logicalGroup2 = p.id AND (at.executedBy = :userId OR at.executedBySubstitute = :userId))
 				)

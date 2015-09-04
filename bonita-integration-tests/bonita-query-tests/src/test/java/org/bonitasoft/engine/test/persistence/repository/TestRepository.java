@@ -68,6 +68,9 @@ import org.bonitasoft.engine.test.persistence.builder.PersistentObjectBuilder;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.transaction.internal.TransactionCoordinatorImpl;
+import org.hibernate.engine.transaction.spi.TransactionCoordinator;
 
 /**
  * Test Repository
@@ -85,6 +88,7 @@ public class TestRepository {
         return sessionFactory.getCurrentSession();
     }
 
+
     protected Session getSessionWithTenantFilter() {
         final Session session = getSession();
         session.enableFilter("tenantFilter").setParameter("tenantId", PersistentObjectBuilder.DEFAULT_TENANT_ID);
@@ -93,6 +97,14 @@ public class TestRepository {
 
     protected Query getNamedQuery(final String queryName) {
         return getSession().getNamedQuery(queryName);
+    }
+
+    public void commit(){
+        getSession().flush();
+        final TransactionCoordinator transactionCoordinator = ((SessionImplementor) getSession()).getTransactionCoordinator();
+        transactionCoordinator.getTransaction().commit();
+        final TransactionCoordinatorImpl transactionCoordinator1 = (TransactionCoordinatorImpl) transactionCoordinator;
+        transactionCoordinator1.reset();
     }
 
     /**

@@ -14,7 +14,7 @@
 package org.bonitasoft.engine.test.persistence.builder.archive;
 
 import org.bonitasoft.engine.core.process.instance.model.archive.impl.SAFlowNodeInstanceImpl;
-import org.bonitasoft.engine.test.persistence.builder.PersistentObjectBuilder;
+import org.bonitasoft.engine.test.persistence.builder.FlowNodeInstanceBuilder;
 
 public abstract class ArchivedFlowNodeInstanceBuilder<T extends SAFlowNodeInstanceImpl, B extends ArchivedFlowNodeInstanceBuilder<T, B>> extends
         ArchivedPersistentObjectBuilder<T, B> {
@@ -162,6 +162,11 @@ public abstract class ArchivedFlowNodeInstanceBuilder<T extends SAFlowNodeInstan
 
     public B withLogicalGroup4(final long logicalGroup) {
         this.logicalGroup4 = logicalGroup;
+        return thisBuilder;
+    }
+
+    public B withRootProcessInstanceId(long processInstanceId) {
+        this.logicalGroup2 = processInstanceId;
         return thisBuilder;
     }
 }

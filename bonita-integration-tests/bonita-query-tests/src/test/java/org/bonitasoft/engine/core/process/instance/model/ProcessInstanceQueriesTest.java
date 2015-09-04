@@ -13,25 +13,27 @@
  **/
 package org.bonitasoft.engine.core.process.instance.model;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.bonitasoft.engine.test.persistence.builder.ActorBuilder.*;
-import static org.bonitasoft.engine.test.persistence.builder.ActorMemberBuilder.*;
-import static org.bonitasoft.engine.test.persistence.builder.CallActivityInstanceBuilder.*;
-import static org.bonitasoft.engine.test.persistence.builder.GatewayInstanceBuilder.*;
-import static org.bonitasoft.engine.test.persistence.builder.PendingActivityMappingBuilder.*;
-import static org.bonitasoft.engine.test.persistence.builder.ProcessInstanceBuilder.*;
-import static org.bonitasoft.engine.test.persistence.builder.SupervisorBuilder.*;
-import static org.bonitasoft.engine.test.persistence.builder.UserBuilder.*;
-import static org.bonitasoft.engine.test.persistence.builder.UserMembershipBuilder.*;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.bonitasoft.engine.test.persistence.builder.ActorBuilder.anActor;
+import static org.bonitasoft.engine.test.persistence.builder.ActorMemberBuilder.anActorMember;
+import static org.bonitasoft.engine.test.persistence.builder.CallActivityInstanceBuilder.aCallActivityInstanceBuilder;
+import static org.bonitasoft.engine.test.persistence.builder.GatewayInstanceBuilder.aGatewayInstanceBuilder;
+import static org.bonitasoft.engine.test.persistence.builder.PendingActivityMappingBuilder.aPendingActivityMapping;
+import static org.bonitasoft.engine.test.persistence.builder.ProcessInstanceBuilder.aProcessInstance;
+import static org.bonitasoft.engine.test.persistence.builder.SupervisorBuilder.aSupervisor;
+import static org.bonitasoft.engine.test.persistence.builder.UserBuilder.aUser;
+import static org.bonitasoft.engine.test.persistence.builder.UserMembershipBuilder.aUserMembership;
+import static org.bonitasoft.engine.test.persistence.builder.UserTaskInstanceBuilder.aUserTask;
+import static org.bonitasoft.engine.test.persistence.builder.archive.ArchivedUserTaskInstanceBuilder.anArchivedUserTask;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.bonitasoft.engine.actor.mapping.model.SActor;
-import org.bonitasoft.engine.actor.mapping.model.SActorMember;
 import org.bonitasoft.engine.bpm.process.ProcessInstanceState;
 import org.bonitasoft.engine.core.process.definition.model.SFlowNodeType;
 import org.bonitasoft.engine.core.process.instance.model.archive.SAProcessInstance;
@@ -39,6 +41,7 @@ import org.bonitasoft.engine.core.process.instance.model.archive.impl.SAProcessI
 import org.bonitasoft.engine.core.process.instance.model.impl.SCallActivityInstanceImpl;
 import org.bonitasoft.engine.core.process.instance.model.impl.SGatewayInstanceImpl;
 import org.bonitasoft.engine.core.process.instance.model.impl.SProcessInstanceImpl;
+import org.bonitasoft.engine.core.process.instance.model.impl.SUserTaskInstanceImpl;
 import org.bonitasoft.engine.identity.model.SUser;
 import org.bonitasoft.engine.test.persistence.builder.PersistentObjectBuilder;
 import org.bonitasoft.engine.test.persistence.repository.ProcessInstanceRepository;
@@ -46,21 +49,21 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.transaction.TransactionConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "/testContext.xml" })
 @Transactional
+@TransactionConfiguration(defaultRollback=false)
 public class ProcessInstanceQueriesTest {
 
+    public static final long processInstanceId = 1234l;
     private static final long aGroupId = 654L;
-
     private static final long anotherGroupId = 9875L;
-
     private static final long aRoleId = 1235L;
-
     private static final long anotherRoleId = 956L;
-
+    private static final long activityId = 575l;
     @Inject
     private ProcessInstanceRepository repository;
 
@@ -86,12 +89,11 @@ public class ProcessInstanceQueriesTest {
         assertThat(taskPendingForUser).isTrue();
     }
 
-
     @Test
     public void isTaskPendingForUser_should_be_true_when_mapped_using_actor() {
         final SUser expectedUser = repository.add(aUser().build());
         SActor actor = repository.add(anActor().build());
-        SActorMember actorMember = repository.add(anActorMember().withUserId(expectedUser.getId()).forActor(actor).build());
+        repository.add(anActorMember().withUserId(expectedUser.getId()).forActor(actor).build());
         final SPendingActivityMapping pendingActivity = repository.add(aPendingActivityMapping().withActorId(actor.getId()).build());
 
         boolean taskPendingForUser = repository.isTaskPendingForUser(pendingActivity.getActivityId(), expectedUser.getId());
@@ -99,11 +101,10 @@ public class ProcessInstanceQueriesTest {
         assertThat(taskPendingForUser).isTrue();
     }
 
-
     @Test
     public void isTaskPendingForUser_should_be_true_when_mapped_using_actor_having_role() {
         final SUser expectedUser = repository.add(aUser().build());
-        repository.add(aUserMembership().forUser(expectedUser).memberOf(aGroupId,aRoleId).build());
+        repository.add(aUserMembership().forUser(expectedUser).memberOf(aGroupId, aRoleId).build());
         SActor actor = repository.add(anActor().build());
         repository.add(anActorMember().withRoleId(aRoleId).forActor(actor).build());
         final SPendingActivityMapping pendingActivity = repository.add(aPendingActivityMapping().withActorId(actor.getId()).build());
@@ -112,10 +113,11 @@ public class ProcessInstanceQueriesTest {
 
         assertThat(taskPendingForUser).isTrue();
     }
+
     @Test
     public void isTaskPendingForUser_should_be_true_when_mapped_using_actor_having_group() {
         final SUser expectedUser = repository.add(aUser().build());
-        repository.add(aUserMembership().forUser(expectedUser).memberOf(aGroupId,aRoleId).build());
+        repository.add(aUserMembership().forUser(expectedUser).memberOf(aGroupId, aRoleId).build());
         SActor actor = repository.add(anActor().build());
         repository.add(anActorMember().withGroupId(aGroupId).forActor(actor).build());
         final SPendingActivityMapping pendingActivity = repository.add(aPendingActivityMapping().withActorId(actor.getId()).build());
@@ -124,10 +126,11 @@ public class ProcessInstanceQueriesTest {
 
         assertThat(taskPendingForUser).isTrue();
     }
+
     @Test
     public void isTaskPendingForUser_should_be_true_when_mapped_using_actor_having_membership() {
         final SUser expectedUser = repository.add(aUser().build());
-        repository.add(aUserMembership().forUser(expectedUser).memberOf(anotherGroupId,anotherRoleId).build());
+        repository.add(aUserMembership().forUser(expectedUser).memberOf(anotherGroupId, anotherRoleId).build());
         SActor actor = repository.add(anActor().build());
         repository.add(anActorMember().withGroupId(anotherGroupId).withRoleId(anotherRoleId).forActor(actor).build());
         final SPendingActivityMapping pendingActivity = repository.add(aPendingActivityMapping().withActorId(actor.getId()).build());
@@ -665,8 +668,8 @@ public class ProcessInstanceQueriesTest {
         // Then
         assertEquals(3, failedSProcessInstance.size());
         assertEquals(failedProcessInstance, failedSProcessInstance.get(0));
-        assertEquals(failedProcessInstanceWithFailedFlowNode, failedSProcessInstance.get(1));
-        assertEquals(processInstanceWithFailedFlowNode, failedSProcessInstance.get(2));
+        assertEquals(processInstanceWithFailedFlowNode, failedSProcessInstance.get(1));
+        assertEquals(failedProcessInstanceWithFailedFlowNode, failedSProcessInstance.get(2));
     }
 
     @Test
@@ -829,5 +832,103 @@ public class ProcessInstanceQueriesTest {
         saProcessInstanceImpl.setName("process" + id);
         return saProcessInstanceImpl;
     }
+
+    @Test
+    public void searchOpenProcessInstancesInvolvingUser_return_process_with_task_pending() {
+        final SUser expectedUser = repository.add(aUser().build());
+        repository.add(aUserMembership().forUser(expectedUser).memberOf(aGroupId, aRoleId).build());
+        SActor actor = repository.add(anActor().build());
+        repository.add(anActorMember().withUserId(expectedUser.getId()).forActor(actor).build());
+        final SProcessInstanceImpl processInstance = aProcessInstance().withId(processInstanceId).build();
+        repository.add(processInstance);
+        final SUserTaskInstanceImpl userTaskInstance = aUserTask().withRootProcessInstanceId(processInstanceId).withId(activityId).build();
+        repository.add(userTaskInstance);
+        repository.add(aPendingActivityMapping().withActorId(actor.getId()).withActivityId(activityId).build());
+        repository.add(aProcessInstance().withId(1455l).build());
+        repository.add(aUserTask().withRootProcessInstanceId(1455l).withId(1255l).build());
+
+        final List<SProcessInstance> sProcessInstances = repository.searchOpenProcessInstancesInvolvingUser(expectedUser.getId());
+
+        assertThat(sProcessInstances).containsOnly(processInstance);
+    }
+
+    @Test
+    public void searchOpenProcessInstancesInvolvingUser_return_process_started_by_user() {
+        final SUser expectedUser = repository.add(aUser().build());
+        final SProcessInstanceImpl processInstance = aProcessInstance().withStartedBy(expectedUser.getId()).build();
+        repository.add(processInstance);
+
+        final List<SProcessInstance> sProcessInstances = repository.searchOpenProcessInstancesInvolvingUser(expectedUser.getId());
+
+        assertThat(sProcessInstances).containsOnly(processInstance);
+    }
+
+    @Test
+    public void searchOpenProcessInstancesInvolvingUser_return_process_with_archived_task_executed_by_user() {
+        final SUser expectedUser = repository.add(aUser().build());
+        final SProcessInstanceImpl processInstance = aProcessInstance().withStartedBy(expectedUser.getId()).build();
+        repository.add(processInstance);
+        repository.add(anArchivedUserTask().withRootProcessInstanceId(processInstanceId).withId(activityId).withExecutedBy(expectedUser.getId()).build());
+        final List<SProcessInstance> sProcessInstances = repository.searchOpenProcessInstancesInvolvingUser(expectedUser.getId());
+
+        assertThat(sProcessInstances).containsOnly(processInstance);
+    }
+
+    @Test
+    public void searchOpenProcessInstancesInvolvingUser_return_process_with_user_task_assigned_to_user() {
+        final SUser expectedUser = repository.add(aUser().build());
+        final SProcessInstanceImpl processInstance = aProcessInstance().withStartedBy(expectedUser.getId()).build();
+        repository.add(processInstance);
+        repository.add(aUserTask().withRootProcessInstanceId(processInstanceId).withId(activityId).withAssigneeId(expectedUser.getId()).build());
+        final List<SProcessInstance> sProcessInstances = repository.searchOpenProcessInstancesInvolvingUser(expectedUser.getId());
+
+        assertThat(sProcessInstances).containsOnly(processInstance);
+    }
+
+
+
+    @Test
+    public void searchOpenProcessInstancesInvolvingUser_return_process_with_task_pending_full_db() {
+        for (int i = 0; i < 50000; i++) {
+            repository.add(aUser().build());
+        }
+        System.out.println("added 50K users");
+        final SUser expectedUser = repository.add(aUser().build());
+
+        for (int i = 0; i < 1000; i++) {
+            repository.add(aUserMembership().forUser(expectedUser).memberOf(aGroupId, i).build());
+        }
+        System.out.println("added 1K membeerships");
+        repository.add(aUserMembership().forUser(expectedUser).memberOf(aGroupId, aRoleId).build());
+
+
+        for (int i = 0; i < 50000; i++) {
+            final SActor actor = repository.add(anActor().build());
+            repository.add(anActorMember().withUserId(expectedUser.getId()).forActor(actor).build());
+            final SProcessInstanceImpl processInstance = repository.add(aProcessInstance().build());
+            final SUserTaskInstanceImpl userTaskInstance = aUserTask().withRootProcessInstanceId(processInstance.getId()).build();
+            aUserTask().withRootProcessInstanceId(processInstance.getId()).build();
+            aUserTask().withRootProcessInstanceId(processInstance.getId()).build();
+            repository.add(aPendingActivityMapping().withActorId(actor.getId()).withActivityId(userTaskInstance.getId()).build());
+
+        }
+        System.out.println("added 50k processes");
+
+        SActor actor = repository.add(anActor().build());
+        repository.add(anActorMember().withRoleId(aRoleId).forActor(actor).build());
+        final SProcessInstanceImpl processInstance = aProcessInstance().withId(processInstanceId).build();
+        repository.add(processInstance);
+        final SUserTaskInstanceImpl userTaskInstance = aUserTask().withRootProcessInstanceId(processInstanceId).withId(activityId).build();
+        repository.add(userTaskInstance);
+        repository.add(aPendingActivityMapping().withActorId(actor.getId()).withActivityId(activityId).build());
+        repository.commit();
+        System.out.println("start the search");
+
+        final long before = System.currentTimeMillis();
+        final List<SProcessInstance> sProcessInstances = repository.searchOpenProcessInstancesInvolvingUser(expectedUser.getId());
+        System.out.println("search time:"+(System.currentTimeMillis()-before));
+        assertThat(sProcessInstances).containsOnly(processInstance);
+    }
+
 
 }
