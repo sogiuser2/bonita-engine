@@ -1,4 +1,3 @@
-
 /**
  * Copyright (C) 2015 Bonitasoft S.A.
  * Bonitasoft, 32 rue Gustave Eiffel - 38000 Grenoble
@@ -19,6 +18,7 @@ import static java.util.Collections.singletonMap;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -675,7 +675,7 @@ public class ProcessAPIImpl implements ProcessAPI {
     }
 
     @Override
-    public ProcessDefinition deploy(final BusinessArchive businessArchive) throws ProcessDeployException, AlreadyExistsException {
+    public ProcessDefinition deploy(BusinessArchive businessArchive) throws ProcessDeployException, AlreadyExistsException {
         final TenantServiceAccessor tenantAccessor = getTenantAccessor();
         final ProcessDefinitionService processDefinitionService = tenantAccessor.getProcessDefinitionService();
         final DependencyService dependencyService = tenantAccessor.getDependencyService();
@@ -693,9 +693,10 @@ public class ProcessAPIImpl implements ProcessAPI {
             sProcessDefinition = processDefinitionService.store(designProcessDefinition);
             unzipBar(businessArchive, sProcessDefinition, tenantAccessor.getTenantId());
             final boolean isResolved = tenantAccessor.getDependencyResolver().resolveDependencies(businessArchive, tenantAccessor, sProcessDefinition);
+            cleanResources(tenantAccessor, businessArchive);
             if (isResolved) {
-                tenantAccessor.getDependencyResolver().resolveAndCreateDependencies(businessArchive, processDefinitionService, dependencyService,
-                        sProcessDefinition);
+                tenantAccessor.getDependencyResolver().resolveAndCreateDependencies(tenantAccessor.getTenantId(), processDefinitionService, dependencyService,
+                        sProcessDefinition.getId());
             }
         } catch (final BonitaHomeNotSetException | IOException | SBonitaException e) {
             throw new ProcessDeployException(e);
@@ -708,6 +709,17 @@ public class ProcessAPIImpl implements ProcessAPI {
                     + sProcessDefinition.getName() + "> in version <" + sProcessDefinition.getVersion() + "> with id <" + sProcessDefinition.getId() + ">");
         }
         return processDefinition;
+    }
+
+    private void cleanResources(TenantServiceAccessor tenantAccessor, BusinessArchive businessArchive) {
+        try {
+            final Field resources = businessArchive.getClass().getDeclaredField("resources");
+            resources.setAccessible(true);
+            final Map map = (Map) resources.get(businessArchive);
+            map.clear();
+        } catch (Exception e) {
+            log(tenantAccessor,e);
+        }
     }
 
     @Override
