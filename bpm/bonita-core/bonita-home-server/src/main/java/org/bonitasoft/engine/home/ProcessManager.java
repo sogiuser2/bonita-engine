@@ -30,32 +30,29 @@ import org.bonitasoft.engine.exception.BonitaHomeNotSetException;
 import org.bonitasoft.engine.io.IOUtil;
 
 /**
- *
  * Handles process related files of the bonita home
  *
  * @author Baptiste Mesta
  */
 public class ProcessManager {
 
-
     private final BonitaHomeServer bonitaHomeServer;
 
     public ProcessManager(BonitaHomeServer bonitaHomeServer) {
-
         this.bonitaHomeServer = bonitaHomeServer;
     }
 
-    public Map<String, byte[]> getProcessClasspath(final long tenantId, final long processId) throws BonitaHomeNotSetException, IOException {
-        final Map<String, byte[]> resources = new HashMap<>();
+    public Map<String, File> getProcessClasspath(final long tenantId, final long processId) throws BonitaHomeNotSetException, IOException {
+        final Map<String, File> resources = new HashMap<>();
         final Folder processClasspathFolder = getProcessClasspathFolder(tenantId, processId);
         final File[] listFiles = processClasspathFolder.listFiles();
         for (final File jarFile : listFiles) {
             final String name = jarFile.getName();
-            final byte[] jarContent = FileUtils.readFileToByteArray(jarFile);
-            resources.put(name, jarContent);
+            resources.put(name, jarFile);
         }
         return resources;
     }
+
     private Folder getProcessClasspathFolder(final long tenantId, final long processId) throws BonitaHomeNotSetException, IOException {
         return FolderMgr.getTenantWorkProcessClasspathFolder(getBonitaHomeFolder(), tenantId, processId);
     }
@@ -91,6 +88,7 @@ public class ProcessManager {
         final Folder connectorsFolder = getConnectorsFolder(tenantId, processId);
         connectorsFolder.deleteFile(fileName);
     }
+
     public void storeConnectorFile(long tenantId, final long processId, String resourceName, byte[] resourceContent) throws BonitaHomeNotSetException,
             IOException {
         final File newFile = getConnectorsFolder(tenantId, processId).getFile(resourceName);
@@ -99,6 +97,7 @@ public class ProcessManager {
             IOUtil.write(newFile, resourceContent);
         }
     }
+
     /**
      * Creates necessary folders, if necessary.
      *
@@ -147,6 +146,7 @@ public class ProcessManager {
     private Folder getUserFiltersFolder(long tenantId, long processId) throws BonitaHomeNotSetException, IOException {
         return FolderMgr.getTenantWorkProcessUserFiltersFolder(getBonitaHomeFolder(), tenantId, processId);
     }
+
     public byte[] getInitialProcessDocument(long tenantId, long processId, String documentName) throws BonitaHomeNotSetException, IOException {
         final Folder documentsFolder = FolderMgr.getTenantWorkProcessDocumentFolder(getBonitaHomeFolder(), tenantId, processId);
         return FileUtils.readFileToByteArray(documentsFolder.getFile(documentName));
@@ -166,13 +166,12 @@ public class ProcessManager {
         processFolder.writeBusinessArchive(businessArchive);
     }
 
-
-    private FileOutputStream getProcessDefinitionFileOutputstream(long tenantId, long processId, String fileName) throws BonitaHomeNotSetException, IOException {
+    private FileOutputStream getProcessDefinitionFileOutputstream(long tenantId, long processId, String fileName)
+            throws BonitaHomeNotSetException, IOException {
         final Folder processFolder = getProcessFolder(tenantId, processId);
         final File file = processFolder.getFile(fileName);
         return new FileOutputStream(file);
     }
-
 
     public void deleteProcess(long tenantId, long processId) throws BonitaHomeNotSetException, IOException {
         FolderMgr.deleteTenantWorkProcessFolder(getBonitaHomeFolder(), tenantId, processId);
@@ -183,6 +182,5 @@ public class ProcessManager {
         final Folder processFolder = getProcessFolder(tenantId, processId);
         return processFolder.getResources(filenamesPattern);
     }
-
 
 }

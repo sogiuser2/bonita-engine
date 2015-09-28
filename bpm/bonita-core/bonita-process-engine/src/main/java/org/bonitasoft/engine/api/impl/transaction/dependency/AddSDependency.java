@@ -13,6 +13,10 @@
  **/
 package org.bonitasoft.engine.api.impl.transaction.dependency;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.commons.io.FileUtils;
 import org.bonitasoft.engine.builder.BuilderFactory;
 import org.bonitasoft.engine.commons.transaction.TransactionContent;
 import org.bonitasoft.engine.dependency.DependencyService;
@@ -33,11 +37,21 @@ public class AddSDependency implements TransactionContent {
 
     private final String name;
 
-    private final byte[] jar;
+    private File file = null;
+
+    private byte[] jar = null;
 
     private final long artifactId;
 
     private final ScopeType artifactType;
+
+    public AddSDependency(final DependencyService dependencyService, final String name, final File file, final long artifactId, final ScopeType artifactType) {
+        this.dependencyService = dependencyService;
+        this.name = name;
+        this.file = file;
+        this.artifactId = artifactId;
+        this.artifactType = artifactType;
+    }
 
     public AddSDependency(final DependencyService dependencyService, final String name, final byte[] jar, final long artifactId, final ScopeType artifactType) {
         this.dependencyService = dependencyService;
@@ -49,15 +63,24 @@ public class AddSDependency implements TransactionContent {
 
     @Override
     public void execute() throws SDependencyException {
-        final SDependency sDependency = BuilderFactory.get(SDependencyBuilderFactory.class)
-                // add a .jar here because we need to add a new method in command API to have name and filename
-                // see BS-7393
-                .createNewInstance(name, artifactId, artifactType, name + ".jar", jar)
-                .done();
-        dependencyService.createDependency(sDependency);
-        final SDependencyMapping sDependencyMapping = BuilderFactory.get(SDependencyMappingBuilderFactory.class)
-                .createNewInstance(sDependency.getId(), artifactId, artifactType).done();
-        dependencyService.createDependencyMapping(sDependencyMapping);
+        final SDependency sDependency;
+        try {
+            if (jar == null) {
+                jar = FileUtils.readFileToByteArray(file);
+            }
+            System.err.println("REMOVE ME: {{{{{{{{{{{{{{ Reading dependency file file the latest possible ...... }}}}}}}}}}}}}}}}");
+            sDependency = BuilderFactory.get(SDependencyBuilderFactory.class)
+                    // add a .file here because we need to add a new method in command API to have name and filename
+                    // see BS-7393
+                    .createNewInstance(name, artifactId, artifactType, name + ".file", jar)
+                    .done();
+            dependencyService.createDependency(sDependency);
+            final SDependencyMapping sDependencyMapping = BuilderFactory.get(SDependencyMappingBuilderFactory.class)
+                    .createNewInstance(sDependency.getId(), artifactId, artifactType).done();
+            dependencyService.createDependencyMapping(sDependencyMapping);
+        } catch (IOException e) {
+            throw new SDependencyException(e);
+        }
     }
 
 }

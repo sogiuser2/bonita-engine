@@ -16,25 +16,21 @@ package org.bonitasoft.engine.dependency.model.builder;
 import org.bonitasoft.engine.dependency.model.ScopeType;
 
 /**
- * 
  * @author Celine Souchet
- * 
  */
 public interface SDependencyBuilderFactory {
 
     /**
      * @param name
-     *            The name of the dependency
+     *        The name of the dependency
      * @param artifactId
-     *            The identifier of the scope
+     *        The identifier of the scope
      * @param artifactType
-     *            The type of the scope
-     * @param version
-     *            The version of the dependency
+     *        The type of the scope
      * @param fileName
-     *            The name of the file of the dependency
+     *        The name of the file of the dependency
      * @param value
-     *            The content of the dependency
+     *        The content of the dependency
      * @return The server dependency builder
      * @since 6.2
      */

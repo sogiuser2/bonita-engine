@@ -16,11 +16,10 @@ package org.bonitasoft.engine.api.impl.resolver;
 import static org.bonitasoft.engine.log.technical.TechnicalLogSeverity.ERROR;
 import static org.bonitasoft.engine.log.technical.TechnicalLogSeverity.INFO;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -67,7 +66,8 @@ public class DependencyResolver {
         this.dependencyResolvers = dependencyResolvers;
     }
 
-    public boolean resolveDependencies(final BusinessArchive businessArchive, final TenantServiceAccessor tenantAccessor, final SProcessDefinition sDefinition) {
+    public boolean resolveDependencies(final BusinessArchive businessArchive, final TenantServiceAccessor tenantAccessor,
+            final SProcessDefinition sDefinition) {
         final List<ProcessDependencyDeployer> resolvers = getResolvers();
         boolean resolved = true;
         for (final ProcessDependencyDeployer resolver : resolvers) {
@@ -154,15 +154,10 @@ public class DependencyResolver {
 
     /**
      * create dependencies based on the bonita home
-     * 
-     * @param processDefinitionService
-     * @param dependencyService
-     * @param processDefinitionId
-     * @throws SBonitaException
      */
     public void resolveAndCreateDependencies(final long tenantId, final ProcessDefinitionService processDefinitionService,
             final DependencyService dependencyService, final long processDefinitionId) throws SBonitaException {
-        Map<String, byte[]> resources;
+        Map<String, File> resources;
         try {
             resources = BonitaHomeServer.getInstance().getProcessManager().getProcessClasspath(tenantId, processDefinitionId);
         } catch (final IOException | BonitaHomeNotSetException e) {
@@ -176,14 +171,12 @@ public class DependencyResolver {
         return processDefinitionId + "_" + name;
     }
 
-    private void addDependencies(final Map<String, byte[]> resources, final DependencyService dependencyService,
+    private void addDependencies(final Map<String, File> resources, final DependencyService dependencyService,
             final long processDefinitionId) throws SBonitaException {
         final List<Long> dependencyIds = getDependencyMappingsOfProcess(dependencyService, processDefinitionId);
         final List<String> dependencies = getDependenciesOfProcess(dependencyService, dependencyIds);
 
-        final Iterator<Entry<String, byte[]>> iterator = resources.entrySet().iterator();
-        while (iterator.hasNext()) {
-            final Map.Entry<java.lang.String, byte[]> entry = iterator.next();
+        for (Entry<String, File> entry : resources.entrySet()) {
             if (!dependencies.contains(getDependencyName(processDefinitionId, entry.getKey()))) {
                 addDependency(entry.getKey(), entry.getValue(), dependencyService, processDefinitionId);
             }
@@ -196,7 +189,7 @@ public class DependencyResolver {
             return Collections.emptyList();
         }
         final List<SDependency> dependencies = dependencyService.getDependencies(dependencyIds);
-        final ArrayList<String> dependencyNames = new ArrayList<String>(dependencies.size());
+        final ArrayList<String> dependencyNames = new ArrayList<>(dependencies.size());
         for (final SDependency sDependency : dependencies) {
             dependencyNames.add(sDependency.getName());
         }
@@ -204,7 +197,7 @@ public class DependencyResolver {
     }
 
     private List<Long> getDependencyMappingsOfProcess(final DependencyService dependencyService, final long processDefinitionId) throws SDependencyException {
-        final List<Long> dependencyIds = new ArrayList<Long>();
+        final List<Long> dependencyIds = new ArrayList<>();
         int fromIndex = 0;
         List<Long> currentPage;
         do {
@@ -215,37 +208,9 @@ public class DependencyResolver {
         return dependencyIds;
     }
 
-    /**
-     * create dependencies based on the business archive
-     * 
-     * @param businessArchive
-     * @param processDefinitionService
-     * @param dependencyService
-     * @param sDefinition
-     * @throws SBonitaException
-     */
-    public void resolveAndCreateDependencies(final BusinessArchive businessArchive, final ProcessDefinitionService processDefinitionService,
-            final DependencyService dependencyService, final SProcessDefinition sDefinition) throws SBonitaException {
-        final Long processDefinitionId = sDefinition.getId();
-        if (businessArchive != null) {
-            final Map<String, byte[]> resources = businessArchive.getResources("^classpath/.*$");
-
-            // remove the classpath/ on path of dependencies
-            final Map<String, byte[]> resourcesWithRealName = new HashMap<String, byte[]>(resources.size());
-            for (final Entry<String, byte[]> resource : resources.entrySet()) {
-                final String name = resource.getKey().substring(10);
-                final byte[] jarContent = resource.getValue();
-                resourcesWithRealName.put(name, jarContent);
-            }
-            addDependencies(resourcesWithRealName, dependencyService, sDefinition.getId());
-        }
-        processDefinitionService.resolveProcess(processDefinitionId);
-    }
-
-    private void addDependency(final String name, final byte[] jarContent, final DependencyService dependencyService,
+    private void addDependency(final String name, final File jarContent, final DependencyService dependencyService,
             final long processdefinitionId) throws SDependencyException {
-        final AddSDependency addSDependency = new AddSDependency(dependencyService, name, jarContent, processdefinitionId, ScopeType.PROCESS);
-        addSDependency.execute();
+        new AddSDependency(dependencyService, name, jarContent, processdefinitionId, ScopeType.PROCESS).execute();
     }
 
     public List<ProcessDependencyDeployer> getResolvers() {
