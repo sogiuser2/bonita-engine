@@ -17,24 +17,27 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
 
-import org.bonitasoft.engine.bdm.Entity;
-import org.bonitasoft.engine.business.data.JsonBusinessDataSerializer;
-import org.bonitasoft.engine.business.data.impl.utils.JsonNumberSerializerHelper;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.bonitasoft.engine.bdm.Entity;
+import org.bonitasoft.engine.business.data.JsonBusinessDataSerializer;
+import org.bonitasoft.engine.business.data.impl.utils.JsonNumberSerializerHelper;
 
 public class JsonBusinessDataSerializerImpl implements JsonBusinessDataSerializer {
 
-    private final ObjectMapper mapper;
+    private ObjectMapper mapper;
 
-    private final EntitySerializer serializer;
+    private EntitySerializer serializer;
 
     public JsonBusinessDataSerializerImpl() {
-        mapper = new ObjectMapper();
+        init();
+    }
+
+    private void init() {
         serializer = new EntitySerializer(new JsonNumberSerializerHelper());
+        mapper = new ObjectMapper();
         final SimpleModule hbm = new SimpleModule();
         hbm.addSerializer(serializer);
         mapper.registerModule(hbm);
@@ -58,4 +61,8 @@ public class JsonBusinessDataSerializerImpl implements JsonBusinessDataSerialize
         return writer.toString();
     }
 
+    @Override
+    public void clearCache() {
+        init();
+    }
 }

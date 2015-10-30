@@ -42,10 +42,16 @@ public class ClassReflector {
 
     private static final String GET = "get";
 
-    private static final Map<String, Method> methods;
+    private static  Map<String, Method> methods;
 
     static {
-        methods = new HashMap<>();
+        methods = new HashMap<String, Method>(){
+            @Override
+            public boolean containsKey(Object key) {
+                return false;
+            }
+
+        };
     }
 
     private static final Object MUTEX = new Object();
@@ -136,25 +142,27 @@ public class ClassReflector {
         }
         stringBuilder.append(')');
         final String key = stringBuilder.toString();
-        putIfAbsent(clazz, methodName, key, parameterTypes);
-        return methods.get(key);
+//        putIfAbsent(clazz, methodName, key, parameterTypes);
+        return clazz.getMethod(methodName, parameterTypes);
+//        return methods.get(key);
     }
 
-    private static void putIfAbsent(final Class<?> clazz, final String methodName, final String key, final Class<?>... parameterTypes)
-            throws NoSuchMethodException {
-        if (!methods.containsKey(key)) {
-            synchronized (MUTEX) {
-                // ensure that key was not put before between check and lock
-                if (!methods.containsKey(key)) {
-                    methods.put(key, clazz.getMethod(methodName, parameterTypes));
-                }
-            }
-        }
-    }
+//    private static void putIfAbsent(final Class<?> clazz, final String methodName, final String key, final Class<?>... parameterTypes)
+//            throws NoSuchMethodException {
+//        if (!methods.containsKey(key)) {
+//            synchronized (MUTEX) {
+//                // ensure that key was not put before between check and lock
+//                if (!methods.containsKey(key)) {
+//                    methods.put(key, clazz.getMethod(methodName, parameterTypes));
+//                }
+//            }
+//        }
+//    }
 
     public static Method getMethodByName(final Class<?> clazz, final String methodName) {
         final String key = clazz.getName() + '.' + methodName;
         putIfAbsent(clazz, methodName, key);
+//        return clazz.getMethod(methodName, )
         return methods.get(key);
     }
 

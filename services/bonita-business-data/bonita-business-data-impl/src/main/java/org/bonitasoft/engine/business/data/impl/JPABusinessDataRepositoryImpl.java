@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.NoResultException;
@@ -42,6 +41,12 @@ import org.bonitasoft.engine.business.data.SBusinessDataNotFoundException;
 import org.bonitasoft.engine.transaction.STransactionNotFoundException;
 import org.bonitasoft.engine.transaction.TransactionService;
 import org.hibernate.Hibernate;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.ejb.AbstractEntityManagerImpl;
+import org.hibernate.engine.query.spi.QueryPlanCache;
+import org.hibernate.engine.query.spi.ReturnMetadata;
+import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.proxy.HibernateProxy;
 
 /**
@@ -206,14 +211,40 @@ public class JPABusinessDataRepositoryImpl implements BusinessDataRepository {
     @Override
     public <T extends Serializable> T findByNamedQuery(final String queryName, final Class<T> resultClass, final Map<String, Serializable> parameters)
             throws NonUniqueResultException {
+        checkQueryReturnType(queryName, resultClass);
         final EntityManager em = getEntityManager();
         final TypedQuery<T> query = em.createNamedQuery(queryName, resultClass);
         return find(resultClass, query, parameters);
     }
 
+    private void checkQueryReturnType(final String queryName, final Class resultClass) {
+        final EntityManager em = getEntityManager();
+//        em.clear();
+
+        System.err.println("Expecting class loaded by classLoader: " + resultClass.getClassLoader());
+
+        final Session session = ((AbstractEntityManagerImpl) em).getSession();
+//        session.clear();
+        org.hibernate.Query namedQuery = session.getNamedQuery(queryName);
+        final SessionFactory sessionFactory = session.getSessionFactory();
+        System.err.println("Looking for namedQuery in factory" + sessionFactory);
+        final QueryPlanCache cache = ((SessionFactoryImpl) sessionFactory).getQueryPlanCache();
+        System.err.println("Looking for namedQuery in queryPlanCache:" + cache);
+//        cache.cleanup();
+
+        final Class queryClass = namedQuery.getReturnTypes()[0].getReturnedClass();
+        System.err.println("Got class loaded by classLoader: " + queryClass.getClassLoader());
+
+        final ReturnMetadata metadata = cache.getHQLQueryPlan(namedQuery.getQueryString(), false, Collections.EMPTY_MAP)
+                .getReturnMetadata();
+        System.err.println("Got class loaded by classLoader metadata: " + metadata.getReturnTypes()[0].getReturnedClass().getClassLoader());
+
+    }
+
     @Override
     public <T extends Serializable> List<T> findListByNamedQuery(final String queryName, final Class<T> resultClass,
             final Map<String, Serializable> parameters, final int startIndex, final int maxResults) {
+        checkQueryReturnType(queryName, resultClass);
         final EntityManager em = getEntityManager();
         final TypedQuery<T> query = em.createNamedQuery(queryName, resultClass);
         return findList(query, parameters, startIndex, maxResults);
@@ -271,4 +302,41 @@ public class JPABusinessDataRepositoryImpl implements BusinessDataRepository {
         return entity;
     }
 
+    public void cleanupQueryPlanCache() {
+        if (entityManagerFactory != null) {
+            stop();
+            start();
+        }
+//        if (businessDataModelRepository.isDBMDeployed()) {
+//            stop();
+//            entityManagerFactory = Persistence.createEntityManagerFactory(BDR_PERSISTENCE_UNIT, configuration);
+//        }
+//        if (entityManagerFactory != null) {
+//            entityManagerFactory.getCache().evictAll();
+            //entityManagerFactory.close();
+//        }
+        //        boolean cleaned = false;
+        //        System.err.println("cleanupQueryPlanCache, this.entityManagerFactory=" + this.entityManagerFactory);
+        //        if (this.entityManagerFactory != null) {
+        //            final SessionFactory sessionFactory = ((EntityManagerFactoryImpl) this.entityManagerFactory).getSessionFactory();
+        //            System.err.println("cleanupQueryPlanCache, sessionFactory=" + sessionFactory);
+        //            if (sessionFactory != null) {
+        //                final QueryPlanCache cache = ((SessionFactoryImpl) sessionFactory).getQueryPlanCache();
+        //                System.err.println("cleanupQueryPlanCache, cache=" + cache);
+        //                if (cache != null) {
+        //                    cache.cleanup();
+        //                    cleaned = true;
+        //                }
+        //            }
+        //        }
+        //        System.err.println("Cleaned=" + cleaned);
+//        EntityManager entityManager = safeGetEntityManager();
+//        if (entityManager != null) {
+//            System.err.println("cleaning entity: " + entityManager);
+//            entityManager.clear();
+//        } else {
+//            System.err.println("Entity manager is null");
+//        }
+
+    }
 }

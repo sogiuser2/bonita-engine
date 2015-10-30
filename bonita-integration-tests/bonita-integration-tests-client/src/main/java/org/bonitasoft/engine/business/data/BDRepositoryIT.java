@@ -88,6 +88,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
+import com.fasterxml.jackson.databind.type.TypeFactory;
+
 public class BDRepositoryIT extends CommonAPIIT {
 
     public static final String BUSINESS_DATA_CLASS_NAME_ID_FIELD = "/businessdata/{className}/{id}/{field}";
@@ -1442,7 +1444,12 @@ public class BDRepositoryIT extends CommonAPIIT {
         parameters.put("queryParameters", (Serializable) queryParameters);
 
         // when
-        final String jsonResult = (String) getCommandAPI().execute("getBusinessDataByQueryCommand", parameters);
+        String jsonResult = (String) getCommandAPI().execute("getBusinessDataByQueryCommand", parameters);
+        getCommandAPI().addDependency("temporaryDeps", new byte[] {0, 1});
+        TypeFactory.defaultInstance().clearCache();
+        //new HeapDumper().dumpHeap("path.hprof", true);
+        jsonResult = (String) getCommandAPI().execute("getBusinessDataByQueryCommand", parameters);
+
 
         // then
         assertThatJson(jsonResult).as("should get employee").hasSameStructureAs(getJsonContent("findByFirstNameAndLastNameNewOrder.json"));
