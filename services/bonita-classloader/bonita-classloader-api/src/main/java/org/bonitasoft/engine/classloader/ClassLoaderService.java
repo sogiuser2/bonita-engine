@@ -62,6 +62,24 @@ public interface ClassLoaderService extends PlatformLifecycleService {
     ClassLoader getLocalClassLoader(final String type, final long id) throws SClassLoaderException;
 
     /**
+     * Registers a {@link ClassLoaderChangeHandler} to this {@code ClassLoaderService}. The handler will be executed every time a ClassLoader (global, or local)
+     * changes.
+     * {@code ClassLoaderChangeHandler}s are executed in an arbitrary order.
+     * If a {@code ClassLoaderChangeHandler} with the same {@link ClassLoaderChangeHandler#getIdentifier()} already exists, it will be replaced by the new one.
+     * 
+     * @param changeHandler the change handler to be registered
+     */
+    void registerClassLoaderChangeHandler(ClassLoaderChangeHandler changeHandler);
+
+    /**
+     * Determines if a {@link ClassLoaderChangeHandler} having the given identifier already exists.
+     * 
+     * @param changeHandlerIdentifier the {@code ClassLoaderChangeHandler} identifier
+     * @return true if a {@code ClassLoaderChangeHandler} having the given identifier already exists; false otherwise.
+     */
+    boolean containsClassLoaderChangeHandler(String changeHandlerIdentifier);
+
+    /**
      * Remove the local ClassLoader identified by the given type and id;
      * 
      * @param type

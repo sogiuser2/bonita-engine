@@ -14,13 +14,15 @@
 package org.bonitasoft.engine.expression.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -64,6 +66,9 @@ public class GroovyScriptExpressionExecutorCacheStrategyTest {
     @Mock
     private CacheConfiguration defaultCacheConfiguration;
 
+    @Mock
+    private ClearGroovyStrategyCacheHandler clearGroovyStrategyCacheHandler;
+
     private EhCacheCacheService cacheService;
 
     private GroovyScriptExpressionExecutorCacheStrategy groovyScriptExpressionExecutorCacheStrategy;
@@ -76,11 +81,13 @@ public class GroovyScriptExpressionExecutorCacheStrategyTest {
     public void setup() throws Exception {
         final CacheConfiguration cacheConfiguration = new CacheConfiguration();
         cacheConfiguration.setName("GROOVY_SCRIPT_CACHE_NAME");
-        final List<CacheConfiguration> cacheConfigurations = Arrays.asList(cacheConfiguration);
+        final List<CacheConfiguration> cacheConfigurations = Collections.singletonList(cacheConfiguration);
         cacheService = new EhCacheCacheService(logger, sessionAccessor, cacheConfigurations, defaultCacheConfiguration, diskStorePath);
         cacheService.start();
-        groovyScriptExpressionExecutorCacheStrategy = new GroovyScriptExpressionExecutorCacheStrategy(cacheService, classLoaderService, logger);
+        groovyScriptExpressionExecutorCacheStrategy = new GroovyScriptExpressionExecutorCacheStrategy(cacheService, classLoaderService, logger, clearGroovyStrategyCacheHandler);
         doReturn(GroovyScriptExpressionExecutorCacheStrategyTest.class.getClassLoader()).when(classLoaderService).getLocalClassLoader(anyString(), anyLong());
+
+        given(clearGroovyStrategyCacheHandler.getIdentifier()).willReturn("handlerId");
         context = new HashMap<>();
         context.put(ExpressionExecutorStrategy.DEFINITION_ID,123456789l);
     }
@@ -224,4 +231,29 @@ public class GroovyScriptExpressionExecutorCacheStrategyTest {
         // then
         //exception
     }
+
+    @Test
+    public void storeInCache_should_register_handler_if_absent() throws Exception {
+        //given
+        given(classLoaderService.containsClassLoaderChangeHandler(clearGroovyStrategyCacheHandler.getIdentifier())).willReturn(false);
+
+        //when
+        groovyScriptExpressionExecutorCacheStrategy.storeInCache("anyKey", "anyObject");
+
+        //then
+        verify(classLoaderService).registerClassLoaderChangeHandler(clearGroovyStrategyCacheHandler);
+    }
+
+    @Test
+    public void storeInCache_should_not_register_handler_if_already_registered() throws Exception {
+        //given
+        given(classLoaderService.containsClassLoaderChangeHandler(clearGroovyStrategyCacheHandler.getIdentifier())).willReturn(true);
+
+        //when
+        groovyScriptExpressionExecutorCacheStrategy.storeInCache("anyKey", "anyObject");
+
+        //then
+        verify(classLoaderService, never()).registerClassLoaderChangeHandler(clearGroovyStrategyCacheHandler);
+    }
+
 }

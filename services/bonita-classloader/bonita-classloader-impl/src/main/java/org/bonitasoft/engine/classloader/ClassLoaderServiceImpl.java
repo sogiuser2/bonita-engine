@@ -47,7 +47,7 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
 
     private VirtualClassLoader virtualGlobalClassLoader = new VirtualClassLoader(GLOBAL_TYPE, GLOBAL_ID, VirtualClassLoader.class.getClassLoader());
 
-    private final Map<String, VirtualClassLoader> localClassLoaders = new HashMap<String, VirtualClassLoader>();
+    private final Map<String, VirtualClassLoader> localClassLoaders = new HashMap<>();
 
     private final Object mutex = new ClassLoaderServiceMutex();
 
@@ -55,10 +55,14 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
 
     private final EventService eventService;
 
-    public ClassLoaderServiceImpl(final ParentClassLoaderResolver parentClassLoaderResolver, final TechnicalLoggerService logger, final EventService eventService) {
+    private final ClassLoaderHandlerManager classLoaderHandlerManager;
+
+    public ClassLoaderServiceImpl(final ParentClassLoaderResolver parentClassLoaderResolver, final TechnicalLoggerService logger,
+            final EventService eventService, ClassLoaderHandlerManager classLoaderHandlerManager) {
         this.parentClassLoaderResolver = parentClassLoaderResolver;
         this.logger = logger;
         this.eventService = eventService;
+        this.classLoaderHandlerManager = classLoaderHandlerManager;
         // BS-9304 : Create the temporary directory with the IOUtil class, to delete it at the end of the JVM
     }
 
@@ -134,6 +138,16 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
     }
 
     @Override
+    public void registerClassLoaderChangeHandler(ClassLoaderChangeHandler changeHandler) {
+        classLoaderHandlerManager.registerClassLoaderChangeHandler(changeHandler);
+    }
+
+    @Override
+    public boolean containsClassLoaderChangeHandler(String changeHandlerIdentifier) {
+        return classLoaderHandlerManager.containsClassLoaderChangeHandler(changeHandlerIdentifier);
+    }
+
+    @Override
     public void removeLocalClassLoader(final String type, final long id) {
         if (logger.isLoggable(this.getClass(), TechnicalLogSeverity.TRACE)) {
             logger.log(this.getClass(), TechnicalLogSeverity.TRACE, LogUtil.getLogBeforeMethod(this.getClass(), "removeLocalClassLoader")
@@ -144,6 +158,7 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
         // Remove the class loader
         final String key = getKey(type, id);
         destroyLocalClassLoader(key);
+        classLoaderHandlerManager.executeHandlers();
 
         if (logger.isLoggable(this.getClass(), TechnicalLogSeverity.TRACE)) {
             logger.log(this.getClass(), TechnicalLogSeverity.TRACE, LogUtil.getLogAfterMethod(this.getClass(), "removeLocalClassLoader"));
@@ -156,12 +171,14 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
             logger.log(this.getClass(), TechnicalLogSeverity.TRACE, LogUtil.getLogBeforeMethod(this.getClass(), "removeAllLocalClassLoaders"));
         }
         NullCheckingUtil.checkArgsNotNull(application);
-        final Set<String> keySet = new HashSet<String>(localClassLoaders.keySet());
+        final Set<String> keySet = new HashSet<>(localClassLoaders.keySet());
         for (final String key : keySet) {
             if (key.startsWith(application + SEPARATOR)) {
                 destroyLocalClassLoader(key);
             }
         }
+        classLoaderHandlerManager.executeHandlers();
+
         if (logger.isLoggable(this.getClass(), TechnicalLogSeverity.TRACE)) {
             logger.log(this.getClass(), TechnicalLogSeverity.TRACE, LogUtil.getLogAfterMethod(this.getClass(), "removeAllLocalClassLoaders"));
         }
@@ -185,7 +202,8 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
         }
         final VirtualClassLoader virtualClassloader = (VirtualClassLoader) getGlobalClassLoader();
         try {
-            refreshClassLoader(virtualClassloader, resources, getGlobalClassLoaderType(), getGlobalClassLoaderId(), BonitaHomeServer.getInstance().getGlobalTemporaryFolder(),
+            refreshClassLoader(virtualClassloader, resources, getGlobalClassLoaderType(), getGlobalClassLoaderId(),
+                    BonitaHomeServer.getInstance().getGlobalTemporaryFolder(),
                     ClassLoaderServiceImpl.class.getClassLoader());
         } catch (Exception e) {
             throw new SClassLoaderException(e);
@@ -200,8 +218,9 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
         }
         final VirtualClassLoader virtualClassloader = (VirtualClassLoader) getLocalClassLoader(type, id);
         try {
-            refreshClassLoader(virtualClassloader, resources, type, id, BonitaHomeServer.getInstance().getLocalTemporaryFolder(type, id), new ParentRedirectClassLoader(
-                    getGlobalClassLoader(), parentClassLoaderResolver, this, type, id));
+            refreshClassLoader(virtualClassloader, resources, type, id, BonitaHomeServer.getInstance().getLocalTemporaryFolder(type, id),
+                    new ParentRedirectClassLoader(
+                            getGlobalClassLoader(), parentClassLoaderResolver, this, type, id));
             final String eventType = "ClassLoaderRefreshed";
             final SEvent event = new SEventImpl(eventType);
             event.setObject(key);
@@ -211,9 +230,10 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
         }
     }
 
-    private void refreshClassLoader(final VirtualClassLoader virtualClassloader, final Map<String, byte[]> resources, final String type, final long id,
-                                    final URI temporaryFolder, final ClassLoader parent) {
+    protected void refreshClassLoader(final VirtualClassLoader virtualClassloader, final Map<String, byte[]> resources, final String type, final long id,
+            final URI temporaryFolder, final ClassLoader parent) {
         virtualClassloader.destroy();
+        classLoaderHandlerManager.executeHandlers();
         final BonitaClassLoader classLoader = new BonitaClassLoader(resources, type, id, temporaryFolder, parent);
         virtualClassloader.setClassLoader(classLoader);
     }
@@ -235,6 +255,7 @@ public class ClassLoaderServiceImpl implements ClassLoaderService {
         shuttingDown = true;
         destroyAllLocalClassLoaders();
         virtualGlobalClassLoader.destroy();
+        classLoaderHandlerManager.executeHandlers();
     }
 
     private void destroyAllLocalClassLoaders() {

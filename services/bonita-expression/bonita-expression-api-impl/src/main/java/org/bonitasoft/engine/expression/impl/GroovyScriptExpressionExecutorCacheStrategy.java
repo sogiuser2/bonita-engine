@@ -13,6 +13,7 @@
  **/
 package org.bonitasoft.engine.expression.impl;
 
+import java.io.Serializable;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Map;
@@ -56,15 +57,18 @@ public class GroovyScriptExpressionExecutorCacheStrategy extends AbstractGroovyS
 
     private final TechnicalLoggerService logger;
 
+    private final ClearGroovyStrategyCacheHandler clearGroovyStrategyCacheHandler;
+
     private final boolean debugEnabled;
 
     private static int counter;
 
     public GroovyScriptExpressionExecutorCacheStrategy(final CacheService cacheService, final ClassLoaderService classLoaderService,
-            final TechnicalLoggerService logger) {
+            final TechnicalLoggerService logger, ClearGroovyStrategyCacheHandler clearGroovyStrategyCacheHandler) {
         this.cacheService = cacheService;
         this.classLoaderService = classLoaderService;
         this.logger = logger;
+        this.clearGroovyStrategyCacheHandler = clearGroovyStrategyCacheHandler;
         debugEnabled = logger.isLoggable(this.getClass(), TechnicalLogSeverity.DEBUG);
     }
 
@@ -88,10 +92,17 @@ public class GroovyScriptExpressionExecutorCacheStrategy extends AbstractGroovyS
                     return new GroovyCodeSource(expressionContent, generateScriptName(), GroovyShell.DEFAULT_CODE_BASE);
                 }
             });
-            cacheService.store(GROOVY_SCRIPT_CACHE_NAME, key, gcs);
+            storeInCache(key, gcs);
         }
         // parse the groovy source code with cache set to true
         return shell.getClassLoader().parseClass(gcs, true);
+    }
+
+    protected void storeInCache(Serializable key, Object gcs) throws SCacheException {
+        if (!classLoaderService.containsClassLoaderChangeHandler(clearGroovyStrategyCacheHandler.getIdentifier())) {
+            classLoaderService.registerClassLoaderChangeHandler(clearGroovyStrategyCacheHandler);
+        }
+        cacheService.store(GROOVY_SCRIPT_CACHE_NAME, key, gcs);
     }
 
     private String getScriptKey(String expressionContent) {
@@ -107,7 +118,7 @@ public class GroovyScriptExpressionExecutorCacheStrategy extends AbstractGroovyS
                 logger.log(this.getClass(), TechnicalLogSeverity.DEBUG, "Create a new groovy classloader for " + definitionId + " " + classLoader);
             }
             shell = new GroovyShell(classLoader);
-            cacheService.store(GROOVY_SCRIPT_CACHE_NAME, key, shell);
+            storeInCache(key, shell);
         }
         return shell;
     }
@@ -134,7 +145,8 @@ public class GroovyScriptExpressionExecutorCacheStrategy extends AbstractGroovyS
             return script.run();
         } catch (final MissingPropertyException e) {
             final String property = e.getProperty();
-            throw new SExpressionEvaluationException("Expression " + expressionName + " with content = <" + expressionContent + "> depends on " + property + " is neither defined in the script nor in dependencies.", e, expressionName);
+            throw new SExpressionEvaluationException("Expression " + expressionName + " with content = <" + expressionContent + "> depends on " + property
+                    + " is neither defined in the script nor in dependencies.", e, expressionName);
         } catch (final GroovyRuntimeException e) {
             throw new SExpressionEvaluationException(e, expressionName);
         } catch (final SCacheException e) {

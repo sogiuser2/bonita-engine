@@ -761,10 +761,15 @@
 
     <bean id="constantExpressionExecutorStrategy" class="org.bonitasoft.engine.expression.impl.ConstantExpressionExecutorStrategy" />
 
+    <bean id="clearGroovyStrategyCacheHandler" class="org.bonitasoft.engine.expression.impl.ClearGroovyStrategyCacheHandler" >
+        <constructor-arg name="cacheService" ref="cacheService" />
+    </bean>
+
     <bean id="groovyScriptExpressionExecutorStrategy" class="org.bonitasoft.engine.expression.impl.GroovyScriptExpressionExecutorCacheStrategy">
         <constructor-arg name="cacheService" ref="cacheService" />
         <constructor-arg name="classLoaderService" ref="classLoaderService" />
         <constructor-arg name="logger" ref="tenantTechnicalLoggerService" />
+        <constructor-arg name="clearGroovyStrategyCacheHandler" ref="clearGroovyStrategyCacheHandler" />
     </bean>
 
     <bean id="inputExpressionExecutorStrategy" class="org.bonitasoft.engine.expression.impl.InputExpressionExecutorStrategy" />

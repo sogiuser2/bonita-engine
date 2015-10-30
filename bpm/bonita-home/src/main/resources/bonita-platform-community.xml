@@ -225,10 +225,15 @@
         <constructor-arg name="sessionAccessor" ref="sessionAccessor" />
     </bean>
 
+    <bean id="classLoaderHandlerManager" class="org.bonitasoft.engine.classloader.ClassLoaderHandlerManager">
+        <constructor-arg name="loggerService" ref="platformTechnicalLoggerService" />
+    </bean>
+
     <bean id="classLoaderService" class="org.bonitasoft.engine.classloader.ClassLoaderServiceImpl">
         <constructor-arg name="parentClassLoaderResolver" ref="parentClassLoaderResolver" />
         <constructor-arg name="logger" ref="platformTechnicalLoggerService" />
         <constructor-arg name="eventService" ref="platformEventService" />
+        <constructor-arg name="classLoaderHandlerManager" ref="classLoaderHandlerManager" />
     </bean>
 
     <bean id="platformCacheService" class="org.bonitasoft.engine.cache.ehcache.PlatformEhCacheCacheService">
