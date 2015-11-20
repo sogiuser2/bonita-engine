@@ -11,6 +11,7 @@
         <property name="maxPoolSize" value="${local.journal.xads.maxPoolSize}" />
 		<property name="acquireIncrement" value="${local.journal.xads.acquireIncrement}" />
         <property name="allowLocalTransactions" value="${local.journal.xads.allowLocalTransactions}" /> <!--  For hibernate : see if we can set it to false -->
+        <property name="testQuery" value="${${sysprop.bonita.db.vendor}.db.testQuery}"/>
         <property name="driverProperties" ref="${sysprop.bonita.db.vendor}.properties">
         </property>
     </bean>  
@@ -38,6 +39,7 @@
         <property name="maxPoolSize" value="${local.bdm.xads.maxPoolSize}" />
         <property name="acquireIncrement" value="${local.bdm.xads.acquireIncrement}" />
         <property name="allowLocalTransactions" value="${local.bdm.xads.allowLocalTransactions}" /> <!--  For hibernate : see if we can set it to false -->
+        <property name="testQuery" value="${${sysprop.bonita.db.vendor}.db.testQuery}"/>
         <property name="driverProperties" ref="${sysprop.bonita.db.vendor}.properties">
         </property>
     </bean>
