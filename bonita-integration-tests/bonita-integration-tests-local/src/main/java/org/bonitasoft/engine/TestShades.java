@@ -63,7 +63,7 @@ public class TestShades {
         } finally {
             IOUtil.deleteDir(file);
         }
-        assertTrue("build was not successfull", outputOfMaven.contains("BUILD SUCCESS"));
+        assertTrue("build was not successful", outputOfMaven.contains("BUILD SUCCESS"));
         outputOfMaven = outputOfMaven.replaceAll("\n?.*Downloading.*\n", "");
         outputOfMaven = outputOfMaven.replaceAll("\n?.*Downloaded.*\n", "");
         outputOfMaven = removedIgnoredBonitaDeps(outputOfMaven);

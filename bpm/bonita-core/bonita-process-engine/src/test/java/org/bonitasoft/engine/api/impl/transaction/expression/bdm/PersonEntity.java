@@ -1,6 +1,6 @@
-/**
- * Copyright (C) 2015 BonitaSoft S.A.
- * BonitaSoft, 32 rue Gustave Eiffel - 38000 Grenoble
+/*
+ * Copyright (C) 2016 Bonitasoft S.A.
+ * Bonitasoft, 32 rue Gustave Eiffel - 38000 Grenoble
  * This library is free software; you can redistribute it and/or modify it under the terms
  * of the GNU Lesser General Public License as published by the Free Software Foundation
  * version 2.1 of the License.
@@ -10,16 +10,13 @@
  * You should have received a copy of the GNU Lesser General Public License along with this
  * program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth
  * Floor, Boston, MA 02110-1301, USA.
- **/
-
-package org.bonitasoft.engine.business.data.proxy;
+ */
+package org.bonitasoft.engine.api.impl.transaction.expression.bdm;
 
 import org.bonitasoft.engine.bdm.Entity;
-import org.bonitasoft.engine.bdm.lazy.LazyLoaded;
 
 /**
  * @author Romain Bioteau
- * @author Laurent Leseigneur
  */
 public class PersonEntity implements Entity {
 
@@ -44,18 +41,4 @@ public class PersonEntity implements Entity {
         return null;
     }
 
-    @LazyLoaded
-    public String getWithLazyLoadedAnnotation() {
-        return "getWithLazyLoadedAnnotation";
-    }
-
-    public void setWithLazyLoadedAnnotation(String unused) {
-    }
-
-    public String getWithoutLazyLoadedAnnotation() {
-        return "getWithoutLazyLoadedAnnotation";
-    }
-
-    public void setWithoutLazyLoadedAnnotation(String unused) {
-    }
 }

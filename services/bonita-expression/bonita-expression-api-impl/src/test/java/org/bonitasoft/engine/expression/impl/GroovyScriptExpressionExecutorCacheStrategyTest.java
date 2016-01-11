@@ -14,6 +14,7 @@
 package org.bonitasoft.engine.expression.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -77,7 +78,7 @@ public class GroovyScriptExpressionExecutorCacheStrategyTest {
         final CacheConfiguration cacheConfiguration = new CacheConfiguration();
         cacheConfiguration.setName("GROOVY_SCRIPT_CACHE_NAME");
         final List<CacheConfiguration> cacheConfigurations = Collections.singletonList(cacheConfiguration);
-        cacheService = new EhCacheCacheService(logger,  cacheConfigurations, defaultCacheConfiguration, diskStorePath, 1);
+        cacheService = new EhCacheCacheService(logger, cacheConfigurations, defaultCacheConfiguration, diskStorePath, 1);
         cacheService.start();
         groovyScriptExpressionExecutorCacheStrategy = new GroovyScriptExpressionExecutorCacheStrategy(cacheService, classLoaderService, logger);
         doReturn(GroovyScriptExpressionExecutorCacheStrategyTest.class.getClassLoader()).when(classLoaderService).getLocalClassLoader(anyString(), anyLong());
@@ -109,38 +110,35 @@ public class GroovyScriptExpressionExecutorCacheStrategyTest {
         assertThat(shell1).isNotEqualTo(shell2);
     }
 
-
     @Test
     public void should_update_on_classloader_listener_clear_shell_cache() throws Exception {
         // given
 
         // when
-        final GroovyShell shell1 = groovyScriptExpressionExecutorCacheStrategy.getShell(12l);
+        final GroovyShell shell1 = groovyScriptExpressionExecutorCacheStrategy.getShell(12L);
         groovyScriptExpressionExecutorCacheStrategy.onUpdate(null);
-        final GroovyShell shell2 = groovyScriptExpressionExecutorCacheStrategy.getShell(12l);
+        final GroovyShell shell2 = groovyScriptExpressionExecutorCacheStrategy.getShell(12L);
 
         // then
         assertThat(shell1).isNotNull();
         assertThat(shell2).isNotNull();
         assertThat(shell1).isNotEqualTo(shell2);
     }
-
 
     @Test
     public void should_destroy_on_classloader_listener_clear_shell_cache() throws Exception {
         // given
 
         // when
-        final GroovyShell shell1 = groovyScriptExpressionExecutorCacheStrategy.getShell(12l);
+        final GroovyShell shell1 = groovyScriptExpressionExecutorCacheStrategy.getShell(12L);
         groovyScriptExpressionExecutorCacheStrategy.onDestroy(null);
-        final GroovyShell shell2 = groovyScriptExpressionExecutorCacheStrategy.getShell(12l);
+        final GroovyShell shell2 = groovyScriptExpressionExecutorCacheStrategy.getShell(12L);
 
         // then
         assertThat(shell1).isNotNull();
         assertThat(shell2).isNotNull();
         assertThat(shell1).isNotEqualTo(shell2);
     }
-
 
     @Test
     public void should_getShell_return_same_shell_for_1_definition() throws Exception {
@@ -258,5 +256,16 @@ public class GroovyScriptExpressionExecutorCacheStrategyTest {
         groovyScriptExpressionExecutorCacheStrategy.evaluate(expression, context, Collections.<Integer, Object> emptyMap(), ContainerState.ACTIVE);
         // then
         //exception
+    }
+
+    @Test
+    public void processDefinitionId_should_be_mandatory() throws Exception {
+        final SExpressionImpl expression = new SExpressionImpl("whatever", "whatever", null, "whatever", null, null);
+        try {
+            groovyScriptExpressionExecutorCacheStrategy.evaluate(expression, new HashMap<String, Object>(), null, ContainerState.ACTIVE);
+            fail("Should have thrown exception");
+        } catch (SExpressionEvaluationException e) {
+            assertThat(e.getCause() instanceof SBonitaRuntimeException);
+        }
     }
 }

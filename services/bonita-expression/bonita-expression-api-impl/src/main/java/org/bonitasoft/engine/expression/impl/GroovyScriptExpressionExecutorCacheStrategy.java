@@ -103,7 +103,7 @@ public class GroovyScriptExpressionExecutorCacheStrategy extends AbstractGroovyS
         String key = SHELL_KEY + definitionId;
         GroovyShell shell = (GroovyShell) cacheService.get(GROOVY_SCRIPT_CACHE_NAME, key);
         if (shell == null) {
-            ClassLoader classLoader = getClassLoaderForShell(definitionId);
+            ClassLoader classLoader = getClassLoaderForProcessDefinition(definitionId);
             if (debugEnabled) {
                 logger.log(this.getClass(), TechnicalLogSeverity.DEBUG, "Create a new groovy classloader for " + definitionId + " " + classLoader);
             }
@@ -113,19 +113,9 @@ public class GroovyScriptExpressionExecutorCacheStrategy extends AbstractGroovyS
         return shell;
     }
 
-    private ClassLoader getClassLoaderForShell(Long definitionId) throws SClassLoaderException {
-        ClassLoader classLoader;
-        if (definitionId == null) {
-            classLoader = Thread.currentThread().getContextClassLoader();
-            //do not has listener, should not happen...
-            if (debugEnabled) {
-                IllegalStateException illegalStateException = new IllegalStateException();
-                logger.log(this.getClass(), TechnicalLogSeverity.DEBUG, "Creating a shell without definition id, might cause issue when reloading classes", illegalStateException);
-            }
-        } else {
-            classLoader = classLoaderService.getLocalClassLoader(DEFINITION_TYPE, definitionId);
-            classLoaderService.addListener(DEFINITION_TYPE, definitionId, this);
-        }
+    private ClassLoader getClassLoaderForProcessDefinition(Long definitionId) throws SClassLoaderException {
+        ClassLoader classLoader = classLoaderService.getLocalClassLoader(DEFINITION_TYPE, definitionId);
+        classLoaderService.addListener(DEFINITION_TYPE, definitionId, this);
         return classLoader;
     }
 
