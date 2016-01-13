@@ -1025,6 +1025,9 @@ public class ProcessManagementIT extends TestWithUser {
                 processStartDate <= readyDate);
         getProcessAPI().assignUserTask(humanTaskInstance.getId(), user.getId());
         getProcessAPI().executeFlowNode(humanTaskInstance.getId());
+        long userTask = waitForUserTask("step two");
+        assignAndExecuteStep(userTask,user);
+        waitForProcessToFinish(startProcess);
         // look in archive
         assertEquals(reachedDate, getProcessAPI().getActivityReachedStateDate(humanTaskInstance.getId(), TestStates.READY.getStateName()));
         disableAndDeleteProcess(processDefinition1);

@@ -182,17 +182,7 @@ public class ProcessInstanceIT extends AbstractProcessInstanceIT {
     }
 
     @Test
-    @Ignore("ENGINE-915 - ArchivedProcessInstance.getStartDate() returns null")
     public void getArchivedProcessInstance() throws Exception {
-        getArchivedProcessInstances();
-    }
-
-    @Test
-    public void getArchivedProcessInstanceOrderByLastUpdate() throws Exception {
-        getArchivedProcessInstances(ProcessInstanceCriterion.LAST_UPDATE_ASC, 0, 1, 2, ProcessInstanceCriterion.LAST_UPDATE_DESC, 2, 1, 0);
-    }
-
-    private void getArchivedProcessInstances() throws Exception {
         final DesignProcessDefinition designProcessDefinition = BuildTestUtil.buildProcessDefinitionWithHumanAndAutomaticSteps(
                 Arrays.asList("step1", "step2"), Arrays.asList(false, false));
         final ProcessDefinition processDefinition = deployAndEnableProcess(designProcessDefinition);
@@ -224,6 +214,11 @@ public class ProcessInstanceIT extends AbstractProcessInstanceIT {
 
         disableAndDeleteProcess(processDefinition);
         assertEquals(0, getProcessAPI().getProcessInstances(0, 10, ProcessInstanceCriterion.DEFAULT).size());
+    }
+
+    @Test
+    public void getArchivedProcessInstanceOrderByLastUpdate() throws Exception {
+        getArchivedProcessInstances(ProcessInstanceCriterion.LAST_UPDATE_ASC, 0, 1, 2, ProcessInstanceCriterion.LAST_UPDATE_DESC, 2, 1, 0);
     }
 
     private void getArchivedProcessInstances(final ProcessInstanceCriterion asc, final int asc1, final int asc2, final int asc3,

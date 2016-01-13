@@ -51,7 +51,6 @@ import org.bonitasoft.engine.api.impl.resolver.BusinessArchiveArtifactManager;
 import org.bonitasoft.engine.api.impl.transaction.CustomTransactions;
 import org.bonitasoft.engine.api.impl.transaction.activity.GetArchivedActivityInstance;
 import org.bonitasoft.engine.api.impl.transaction.activity.GetArchivedActivityInstances;
-import org.bonitasoft.engine.api.impl.transaction.activity.GetContractOfUserTaskInstance;
 import org.bonitasoft.engine.api.impl.transaction.activity.GetNumberOfActivityInstance;
 import org.bonitasoft.engine.api.impl.transaction.actor.ExportActorMapping;
 import org.bonitasoft.engine.api.impl.transaction.actor.GetActor;
@@ -78,8 +77,6 @@ import org.bonitasoft.engine.api.impl.transaction.event.GetEventInstances;
 import org.bonitasoft.engine.api.impl.transaction.expression.EvaluateExpressionsDefinitionLevel;
 import org.bonitasoft.engine.api.impl.transaction.expression.EvaluateExpressionsInstanceLevel;
 import org.bonitasoft.engine.api.impl.transaction.expression.EvaluateExpressionsInstanceLevelAndArchived;
-import org.bonitasoft.engine.api.impl.transaction.flownode.ExecuteFlowNode;
-import org.bonitasoft.engine.api.impl.transaction.flownode.GetFlowNodeInstance;
 import org.bonitasoft.engine.api.impl.transaction.flownode.SetExpectedEndDate;
 import org.bonitasoft.engine.api.impl.transaction.identity.GetSUser;
 import org.bonitasoft.engine.api.impl.transaction.process.AddProcessDefinitionToCategory;
@@ -209,7 +206,6 @@ import org.bonitasoft.engine.commons.exceptions.SBonitaRuntimeException;
 import org.bonitasoft.engine.commons.exceptions.SObjectCreationException;
 import org.bonitasoft.engine.commons.transaction.TransactionContent;
 import org.bonitasoft.engine.commons.transaction.TransactionContentWithResult;
-import org.bonitasoft.engine.commons.transaction.TransactionExecutor;
 import org.bonitasoft.engine.core.category.CategoryService;
 import org.bonitasoft.engine.core.category.exception.SCategoryAlreadyExistsException;
 import org.bonitasoft.engine.core.category.exception.SCategoryInProcessAlreadyExistsException;
@@ -271,6 +267,7 @@ import org.bonitasoft.engine.core.process.instance.api.exceptions.SActivityInsta
 import org.bonitasoft.engine.core.process.instance.api.exceptions.SActivityModificationException;
 import org.bonitasoft.engine.core.process.instance.api.exceptions.SActivityReadException;
 import org.bonitasoft.engine.core.process.instance.api.exceptions.SContractViolationException;
+import org.bonitasoft.engine.core.process.instance.api.exceptions.SFlowNodeExecutionException;
 import org.bonitasoft.engine.core.process.instance.api.exceptions.SFlowNodeNotFoundException;
 import org.bonitasoft.engine.core.process.instance.api.exceptions.SFlowNodeReadException;
 import org.bonitasoft.engine.core.process.instance.api.exceptions.SProcessInstanceHierarchicalDeletionException;
@@ -329,6 +326,7 @@ import org.bonitasoft.engine.execution.WaitingEventsInterrupter;
 import org.bonitasoft.engine.execution.event.EventsHandler;
 import org.bonitasoft.engine.execution.job.JobNameBuilder;
 import org.bonitasoft.engine.execution.state.FlowNodeStateManager;
+import org.bonitasoft.engine.execution.work.WorkFactory;
 import org.bonitasoft.engine.expression.ContainerState;
 import org.bonitasoft.engine.expression.Expression;
 import org.bonitasoft.engine.expression.ExpressionBuilder;
@@ -350,6 +348,7 @@ import org.bonitasoft.engine.job.FailedJob;
 import org.bonitasoft.engine.lock.BonitaLock;
 import org.bonitasoft.engine.lock.LockService;
 import org.bonitasoft.engine.lock.SLockException;
+import org.bonitasoft.engine.log.LogMessageBuilder;
 import org.bonitasoft.engine.log.technical.TechnicalLogSeverity;
 import org.bonitasoft.engine.log.technical.TechnicalLoggerService;
 import org.bonitasoft.engine.operation.LeftOperand;
@@ -427,6 +426,7 @@ import org.bonitasoft.engine.search.task.SearchPendingTasksManagedBy;
 import org.bonitasoft.engine.search.task.SearchPendingTasksSupervisedBy;
 import org.bonitasoft.engine.service.ModelConvertor;
 import org.bonitasoft.engine.service.TenantServiceAccessor;
+import org.bonitasoft.engine.session.model.SSession;
 import org.bonitasoft.engine.supervisor.mapping.SSupervisorDeletionException;
 import org.bonitasoft.engine.supervisor.mapping.SSupervisorNotFoundException;
 import org.bonitasoft.engine.supervisor.mapping.SupervisorMappingService;
@@ -434,6 +434,8 @@ import org.bonitasoft.engine.supervisor.mapping.model.SProcessSupervisor;
 import org.bonitasoft.engine.supervisor.mapping.model.SProcessSupervisorBuilder;
 import org.bonitasoft.engine.supervisor.mapping.model.SProcessSupervisorBuilderFactory;
 import org.bonitasoft.engine.transaction.UserTransactionService;
+import org.bonitasoft.engine.work.BonitaWork;
+import org.bonitasoft.engine.work.WorkService;
 
 /**
  * @author Baptiste Mesta
@@ -745,48 +747,30 @@ public class ProcessAPIImpl implements ProcessAPI {
             enableProcess.execute();
         } catch (final SProcessDefinitionNotFoundException e) {
             throw new ProcessDefinitionNotFoundException(e);
-        } catch (final SBonitaException sbe) {
-            throw new ProcessEnablementException(sbe);
         } catch (final Exception e) {
             throw new ProcessEnablementException(e);
         }
     }
 
-    @CustomTransactions
     @Override
     public void executeFlowNode(final long flownodeInstanceId) throws FlowNodeExecutionException {
         executeFlowNode(0, flownodeInstanceId, true);
     }
 
-    @CustomTransactions
     @Override
     public void executeFlowNode(final long userId, final long flownodeInstanceId) throws FlowNodeExecutionException {
         try {
-            executeFlowNode(userId, flownodeInstanceId, true, new HashMap<String, Serializable>());
-        } catch (final ContractViolationException e) {
-            throw new FlowNodeExecutionException(e);
-        } catch (final SBonitaException e) {
+            executeFlowNode(userId, flownodeInstanceId, new HashMap<String, Serializable>());
+        } catch (final ContractViolationException | SBonitaException e) {
             throw new FlowNodeExecutionException(e);
         }
     }
 
     protected void executeFlowNode(final long userId, final long flownodeInstanceId, final boolean wrapInTransaction) throws FlowNodeExecutionException {
         try {
-            executeFlowNode(userId, flownodeInstanceId, wrapInTransaction, new HashMap<String, Serializable>());
-        } catch (final ContractViolationException e) {
+            executeFlowNode(userId, flownodeInstanceId, new HashMap<String, Serializable>());
+        } catch (final ContractViolationException | SBonitaException e) {
             throw new FlowNodeExecutionException(e);
-        } catch (final SBonitaException e) {
-            throw new FlowNodeExecutionException(e);
-        }
-    }
-
-    private void executeTransactionContent(final TenantServiceAccessor tenantAccessor, final TransactionContent transactionContent,
-            final boolean wrapInTransaction) throws SBonitaException {
-        if (wrapInTransaction) {
-            final TransactionExecutor transactionExecutor = tenantAccessor.getTransactionExecutor();
-            transactionExecutor.execute(transactionContent);
-        } else {
-            transactionContent.execute();
         }
     }
 
@@ -5715,7 +5699,6 @@ public class ProcessAPIImpl implements ProcessAPI {
         }
     }
 
-    @CustomTransactions
     @Override
     public void executeUserTask(final long flownodeInstanceId, final Map<String, Serializable> inputs) throws FlowNodeExecutionException,
             ContractViolationException,
@@ -5723,12 +5706,11 @@ public class ProcessAPIImpl implements ProcessAPI {
         executeUserTask(0, flownodeInstanceId, inputs);
     }
 
-    @CustomTransactions
     @Override
     public void executeUserTask(final long userId, final long flownodeInstanceId, final Map<String, Serializable> inputs) throws FlowNodeExecutionException,
             ContractViolationException, UserTaskNotFoundException {
         try {
-            executeFlowNode(userId, flownodeInstanceId, true, inputs);
+            executeFlowNode(userId, flownodeInstanceId, inputs);
         } catch (final SFlowNodeNotFoundException e) {
             throw new UserTaskNotFoundException(e);
         } catch (final SBonitaException e) {
@@ -5736,37 +5718,77 @@ public class ProcessAPIImpl implements ProcessAPI {
         }
     }
 
-    protected void executeFlowNode(final long userId, final long flownodeInstanceId, final boolean wrapInTransaction, final Map<String, Serializable> inputs)
+    protected void executeFlowNode(final long userId, final long flowNodeInstanceId, final Map<String, Serializable> inputs)
             throws ContractViolationException, SBonitaException {
         final TenantServiceAccessor tenantAccessor = getTenantAccessor();
-        final GetFlowNodeInstance getFlowNodeInstance = new GetFlowNodeInstance(tenantAccessor.getActivityInstanceService(), flownodeInstanceId);
-        executeTransactionContent(tenantAccessor, getFlowNodeInstance, wrapInTransaction);
-        final SFlowNodeInstance flowNodeInstance = getFlowNodeInstance.getResult();
+        ActivityInstanceService activityInstanceService = tenantAccessor.getActivityInstanceService();
+        ContractDataService contractDataService = tenantAccessor.getContractDataService();
+        TechnicalLoggerService logger = tenantAccessor.getTechnicalLoggerService();
+        IdentityService identityService = tenantAccessor.getIdentityService();
+        SCommentService commentService = tenantAccessor.getCommentService();
+        WorkService workService = tenantAccessor.getWorkService();
+
+
+        SFlowNodeInstance flowNodeInstance = activityInstanceService.getFlowNodeInstance(flowNodeInstanceId);
+
         if (flowNodeInstance instanceof SUserTaskInstance) {
             try {
-                throwContractViolationExceptionIfContractIsInvalid(wrapInTransaction, inputs, tenantAccessor, flowNodeInstance);
+                throwContractViolationExceptionIfContractIsInvalid(inputs, tenantAccessor, flowNodeInstance);
             } catch (SContractViolationException e) {
                 throw new ContractViolationException(e.getSimpleMessage(), e.getMessage(), e.getExplanations(), e.getCause());
             }
         }
+        if (flowNodeInstance instanceof SHumanTaskInstance && ((SHumanTaskInstance) flowNodeInstance).getAssigneeId() <= 0) {
+            throw new SFlowNodeExecutionException("The user task " + flowNodeInstanceId + " is not assigned");
+        }
+        final SSession session = SessionInfos.getSession();
+        if (session != null) {
+            final long executerSubstituteUserId = session.getUserId();
+            final long executerUserId;
+            if (userId == 0) {
+                executerUserId = executerSubstituteUserId;
+            } else {
+                executerUserId = userId;
+            }
+            final boolean isFirstState = flowNodeInstance.getStateId() == 0;
 
-        final LockService lockService = tenantAccessor.getLockService();
-        final BonitaLock lock = lockService.lock(flowNodeInstance.getParentProcessInstanceId(), SFlowElementsContainerType.PROCESS.name(),
-                tenantAccessor.getTenantId());
-        try {
-            final ExecuteFlowNode executeFlowNode = new ExecuteFlowNode(tenantAccessor, userId, flowNodeInstance, inputs);
-            executeTransactionContent(tenantAccessor, executeFlowNode, wrapInTransaction);
-        } finally {
-            lockService.unlock(lock, tenantAccessor.getTenantId());
+            if (flowNodeInstance instanceof SUserTaskInstance) {
+                contractDataService.addUserTaskData(flowNodeInstance.getId(), inputs);
+            }
+            // flag as executing
+            activityInstanceService.setExecuting(flowNodeInstance);
+            activityInstanceService.setExecutedBy(flowNodeInstance, executerUserId);
+            activityInstanceService.setExecutedBySubstitute(flowNodeInstance, executerSubstituteUserId);
+            //register work
+            BonitaWork work = WorkFactory.createExecuteFlowNodeWork(flowNodeInstance.getProcessDefinitionId(), flowNodeInstance.getParentProcessInstanceId(), flowNodeInstanceId, null, null);
+            workService.registerWork(work);
+            if (logger.isLoggable(getClass(), TechnicalLogSeverity.INFO) && !isFirstState /* don't log when create subtask */) {
+                final String message = LogMessageBuilder.buildExecuteTaskContextMessage(flowNodeInstance, session.getUserName(), executerUserId,
+                        executerSubstituteUserId, inputs);
+                logger.log(getClass(), TechnicalLogSeverity.INFO, message);
+            }
+            if (executerUserId != executerSubstituteUserId) {
+                try {
+                    final SUser executerUser = identityService.getUser(executerUserId);
+                    String stb = "The user " + session.getUserName() + " " +
+                            "acting as delegate of the user " + executerUser.getUserName() + " " +
+                            "has done the task \"" + flowNodeInstance.getDisplayName() + "\".";
+                    commentService.addSystemComment(flowNodeInstance.getParentProcessInstanceId(), stb);
+                } catch (final SBonitaException e) {
+                    logger.log(this.getClass(), TechnicalLogSeverity.ERROR, "Error when adding a comment on the process instance.", e);
+                }
+            }
         }
     }
 
-    private void throwContractViolationExceptionIfContractIsInvalid(final boolean wrapInTransaction, final Map<String, Serializable> inputs,
-            final TenantServiceAccessor tenantAccessor, final SFlowNodeInstance flowNodeInstance) throws SBonitaException, SContractViolationException {
-        final GetContractOfUserTaskInstance contractOfUserTaskInstance = new GetContractOfUserTaskInstance(tenantAccessor.getProcessDefinitionService(),
-                (SUserTaskInstance) flowNodeInstance);
-        executeTransactionContent(tenantAccessor, contractOfUserTaskInstance, wrapInTransaction);
-        final SContractDefinition contractDefinition = contractOfUserTaskInstance.getResult();
+    private void throwContractViolationExceptionIfContractIsInvalid(final Map<String, Serializable> inputs,
+            final TenantServiceAccessor tenantAccessor, final SFlowNodeInstance flowNodeInstance)
+                    throws SBonitaReadException, SProcessDefinitionNotFoundException {
+        final SProcessDefinition processDefinition = tenantAccessor.getProcessDefinitionService()
+                .getProcessDefinition(flowNodeInstance.getProcessDefinitionId());
+        final SUserTaskDefinition userTaskDefinition = (SUserTaskDefinition) processDefinition.getProcessContainer().getFlowNode(
+                flowNodeInstance.getFlowNodeDefinitionId());
+        final SContractDefinition contractDefinition = userTaskDefinition.getContract();
         final ContractValidator validator = new ContractValidatorFactory().createContractValidator(tenantAccessor.getTechnicalLoggerService(),
                 tenantAccessor.getExpressionService());
         validator.validate(flowNodeInstance.getProcessDefinitionId(), contractDefinition, inputs);
@@ -5889,7 +5911,8 @@ public class ProcessAPIImpl implements ProcessAPI {
         TenantServiceAccessor tenantAccessor = getTenantAccessor();
         try {
             SAFlowNodeInstance archivedActivityInstance = tenantAccessor.getActivityInstanceService().getArchivedFlowNodeInstance(archivedUserTaskInstanceId);
-            SProcessDefinition processDefinition = tenantAccessor.getProcessDefinitionService().getProcessDefinition(archivedActivityInstance.getProcessDefinitionId());
+            SProcessDefinition processDefinition = tenantAccessor.getProcessDefinitionService()
+                    .getProcessDefinition(archivedActivityInstance.getProcessDefinitionId());
             final SExpressionContext expressionContext = createExpressionContext(archivedActivityInstance.getSourceObjectId(), processDefinition,
                     CONTAINER_TYPE_ACTIVITY_INSTANCE, archivedActivityInstance.getArchiveDate());
             SFlowNodeDefinition flowNode = processDefinition.getProcessContainer().getFlowNode(archivedActivityInstance.getFlowNodeDefinitionId());

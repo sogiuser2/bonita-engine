@@ -144,8 +144,10 @@ public class ContractIT extends CommonAPIIT {
 
         final ProcessDefinition processDefinition = deployAndEnableProcessWithActor(builder.done(), ACTOR_NAME, matti);
 
-        final ProcessInstance processInstance = getProcessAPI().startProcessWithInputs(processDefinition.getId(), Collections.<String, Serializable>singletonMap("nameInput", "john"));
-        assertThat(getProcessAPI().getProcessDataInstance("name", processInstance.getId()).getValue()).as("value of the data 'name' of the process").isEqualTo("john");
+        final ProcessInstance processInstance = getProcessAPI().startProcessWithInputs(processDefinition.getId(),
+                Collections.<String, Serializable> singletonMap("nameInput", "john"));
+        assertThat(getProcessAPI().getProcessDataInstance("name", processInstance.getId()).getValue()).as("value of the data 'name' of the process")
+                .isEqualTo("john");
         waitForUserTask(TASK1);
 
         getProcessAPI().sendSignal("*Bip Bip*");
@@ -316,6 +318,28 @@ public class ContractIT extends CommonAPIIT {
         disableAndDeleteProcess(processDefinition);
     }
 
+    @Test
+    public void should_valid_contract_with_invalid_operation_do_not_throw_exception() throws Exception {
+        /*
+         * the operation should be executed asynchronously, not in the same call as the contract input
+         */
+        final ProcessDefinitionBuilder builder = new ProcessDefinitionBuilder().createNewInstance("contract", "1.0");
+        builder.addActor(ACTOR_NAME);
+        builder.addShortTextData("dataName", null);
+        UserTaskDefinitionBuilder userTaskDefinitionBuilder = builder.addUserTask(TASK1, ACTOR_NAME);
+        userTaskDefinitionBuilder.addContract().addInput("numberOfDays", Type.INTEGER, null);
+        userTaskDefinitionBuilder.addOperation(new OperationBuilder().createSetDataOperation("dataName",
+                new ExpressionBuilder().createGroovyScriptExpression("script", "throw new java.lang.RuntimeException()", String.class.getName())));
+        final ProcessDefinition processDefinition = deployAndEnableProcessWithActor(builder.done(), ACTOR_NAME, matti);
+        ProcessInstance processInstance = getProcessAPI().startProcess(processDefinition.getId());
+        final HumanTaskInstance userTask = waitForUserTaskAndGetIt(TASK1);
+        getProcessAPI().assignUserTask(userTask.getId(), matti.getId());
+
+        getProcessAPI().executeUserTask(userTask.getId(), Collections.<String, Serializable> singletonMap("numberOfDays", 123));
+        waitForFlowNodeInFailedState(processInstance, TASK1);
+        disableAndDeleteProcess(processDefinition);
+    }
+
     @SuppressWarnings("unchecked")
     @Test
     public void use_a_multiple_complex_input_in_user_tasks() throws Exception {
@@ -395,7 +419,8 @@ public class ContractIT extends CommonAPIIT {
         disableAndDeleteProcess(processDefinition);
     }
 
-    private Map<String, Serializable> createExpenseLine(final String expenseType, final float expenseAmount, final Date expenseDate, final byte[] expenseProof) {
+    private Map<String, Serializable> createExpenseLine(final String expenseType, final float expenseAmount, final Date expenseDate,
+            final byte[] expenseProof) {
         final Map<String, Serializable> expenseLine = new HashMap<>();
         expenseLine.put("expenseType", expenseType);
         expenseLine.put("expenseAmount", expenseAmount);
