@@ -693,7 +693,7 @@ public class StateBehaviors {
                 for (final SActivityInstance sActivityInstance : childrenOfAnActivity) {
                     containerRegistry.executeFlowNode(flowNodeInstance.getProcessDefinitionId(),
                             sActivityInstance.getLogicalGroup(BuilderFactory.get(SAAutomaticTaskInstanceBuilderFactory.class).getParentProcessInstanceIndex()),
-                            sActivityInstance.getId(), null, null);
+                            sActivityInstance.getId());
                 }
                 i += BATCH_SIZE;
             } while (childrenOfAnActivity.size() == BATCH_SIZE);
@@ -713,7 +713,7 @@ public class StateBehaviors {
                 if (child.isStable()) {
                     containerRegistry.executeFlowNode(child.getProcessDefinitionId(),
                             child.getLogicalGroup(BuilderFactory.get(SAAutomaticTaskInstanceBuilderFactory.class).getParentProcessInstanceIndex()),
-                            child.getId(), null, null);
+                            child.getId());
                 }
             }
             queryOptions = QueryOptions.getNextPage(queryOptions);
@@ -774,7 +774,7 @@ public class StateBehaviors {
                 );
 
         // no need to handle failed state, creation is in the same tx
-        containerRegistry.executeFlowNodeInSameThread(parentProcessInstanceId, boundaryEventInstance.getId(), null, null, containerType.name());
+        containerRegistry.executeFlowNodeInSameThread(parentProcessInstanceId, boundaryEventInstance.getId(), containerType.name());
     }
 
     private SFlowElementsContainerType getContainerType(final SActivityInstance activityInstance,
@@ -813,8 +813,8 @@ public class StateBehaviors {
                     activityInstanceService.setStateCategory(boundaryEventInstance, categoryState);
                     if (stable) {
                         containerRegistry.executeFlowNode(processDefinition.getId(),
-                                boundaryEventInstance.getLogicalGroup(keyProvider.getParentProcessInstanceIndex()), boundaryEventInstance.getId(), null,
-                                null);
+                                boundaryEventInstance.getLogicalGroup(keyProvider.getParentProcessInstanceIndex()), boundaryEventInstance.getId()
+                        );
                     }
                 }
             }

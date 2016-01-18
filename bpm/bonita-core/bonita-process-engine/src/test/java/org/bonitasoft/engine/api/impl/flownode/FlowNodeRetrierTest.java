@@ -17,20 +17,15 @@ package org.bonitasoft.engine.api.impl.flownode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import java.util.List;
-
 import org.bonitasoft.engine.api.impl.connector.ConnectorResetStrategy;
 import org.bonitasoft.engine.bpm.flownode.ActivityExecutionException;
 import org.bonitasoft.engine.bpm.flownode.ActivityInstanceNotFoundException;
 import org.bonitasoft.engine.bpm.flownode.ActivityStates;
-import org.bonitasoft.engine.core.expression.control.model.SExpressionContext;
-import org.bonitasoft.engine.core.operation.model.SOperation;
 import org.bonitasoft.engine.core.process.instance.api.ActivityInstanceService;
 import org.bonitasoft.engine.core.process.instance.api.exceptions.SFlowNodeNotFoundException;
 import org.bonitasoft.engine.core.process.instance.api.exceptions.SFlowNodeReadException;
@@ -46,7 +41,6 @@ import org.bonitasoft.engine.execution.state.ReadyActivityStateImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -111,7 +105,7 @@ public class FlowNodeRetrierTest {
         //then
         verify(strategy).resetConnectorsOf(FLOW_NODE_INSTANCE_ID);
         verify(flowNodeExecutor).setStateByStateId(PROCESS_DEFINITION_ID, FLOW_NODE_INSTANCE_ID, PREVIOUS_STATE_ID);
-        verify(registry).executeFlowNode(PROCESS_DEFINITION_ID, PROCESS_INSTANCE_ID, FLOW_NODE_INSTANCE_ID, null, null);
+        verify(registry).executeFlowNode(PROCESS_DEFINITION_ID, PROCESS_INSTANCE_ID, FLOW_NODE_INSTANCE_ID);
     }
 
     @Test
@@ -126,7 +120,7 @@ public class FlowNodeRetrierTest {
         retrier.retry(FLOW_NODE_INSTANCE_ID);
 
         //then
-        verify(registry, never()).executeFlowNode(anyLong(), anyLong(), anyLong(), any(SExpressionContext.class), Matchers.<List<SOperation>> any());
+        verify(registry, never()).executeFlowNode(anyLong(), anyLong(), anyLong());
         verify(flowNodeExecutor).setStateByStateId(PROCESS_DEFINITION_ID, FLOW_NODE_INSTANCE_ID, PREVIOUS_STATE_ID);
     }
 

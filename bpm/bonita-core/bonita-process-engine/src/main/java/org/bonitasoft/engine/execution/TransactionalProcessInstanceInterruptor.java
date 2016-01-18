@@ -58,7 +58,7 @@ public class TransactionalProcessInstanceInterruptor extends AbstractProcessInst
     protected void resumeChildExecution(final long flowNodeInstanceId, final long processInstanceId, final long userId) throws SFlowNodeReadException,
             SFlowNodeExecutionException {
         // no need to handle failed state, all is in the same tx
-        processExecutor.executeFlowNode(flowNodeInstanceId, null, null, processInstanceId, userId, userId);
+        processExecutor.executeFlowNode(flowNodeInstanceId, processInstanceId, userId, userId);
     }
 
     @Override

@@ -131,6 +131,7 @@
         <constructor-arg name="processInstanceService" ref="processInstanceService" />
         <constructor-arg name="flowNodeInstanceService" ref="activityInstanceService" />
         <constructor-arg name="logger" ref="tenantTechnicalLoggerService" />
+        <constructor-arg name="operationService" ref="operationService" />
     </bean>
 
     <bean id="transitionConditionEvaluator" class="org.bonitasoft.engine.execution.transition.TransitionConditionEvaluator">

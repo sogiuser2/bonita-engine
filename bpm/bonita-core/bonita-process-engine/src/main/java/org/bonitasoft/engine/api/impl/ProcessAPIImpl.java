@@ -5760,7 +5760,7 @@ public class ProcessAPIImpl implements ProcessAPI {
             activityInstanceService.setExecutedBy(flowNodeInstance, executerUserId);
             activityInstanceService.setExecutedBySubstitute(flowNodeInstance, executerSubstituteUserId);
             //register work
-            BonitaWork work = WorkFactory.createExecuteFlowNodeWork(flowNodeInstance.getProcessDefinitionId(), flowNodeInstance.getParentProcessInstanceId(), flowNodeInstanceId, null, null);
+            BonitaWork work = WorkFactory.createExecuteFlowNodeWork(flowNodeInstance.getProcessDefinitionId(), flowNodeInstance.getParentProcessInstanceId(), flowNodeInstanceId);
             workService.registerWork(work);
             if (logger.isLoggable(getClass(), TechnicalLogSeverity.INFO) && !isFirstState /* don't log when create subtask */) {
                 final String message = LogMessageBuilder.buildExecuteTaskContextMessage(flowNodeInstance, session.getUserName(), executerUserId,
