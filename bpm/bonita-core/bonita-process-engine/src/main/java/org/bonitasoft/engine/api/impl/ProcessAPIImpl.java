@@ -5726,6 +5726,7 @@ public class ProcessAPIImpl implements ProcessAPI {
         TechnicalLoggerService logger = tenantAccessor.getTechnicalLoggerService();
         IdentityService identityService = tenantAccessor.getIdentityService();
         SCommentService commentService = tenantAccessor.getCommentService();
+        FlowNodeExecutor flowNodeExecutor = tenantAccessor.getFlowNodeExecutor();
         WorkService workService = tenantAccessor.getWorkService();
 
 
@@ -5755,6 +5756,7 @@ public class ProcessAPIImpl implements ProcessAPI {
             if (flowNodeInstance instanceof SUserTaskInstance) {
                 contractDataService.addUserTaskData(flowNodeInstance.getId(), inputs);
             }
+            flowNodeExecutor.archiveFlowNodeInstance(flowNodeInstance, false, flowNodeInstance.getProcessDefinitionId());
             // flag as executing
             activityInstanceService.setExecuting(flowNodeInstance);
             activityInstanceService.setExecutedBy(flowNodeInstance, executerUserId);
