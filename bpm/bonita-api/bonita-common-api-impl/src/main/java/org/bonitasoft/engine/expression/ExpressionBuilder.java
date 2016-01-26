@@ -124,6 +124,11 @@ public class ExpressionBuilder {
         return createConstantExpression(valueOf, valueOf, Long.class);
     }
 
+    public Expression createConstantLongExpression(final String name, final long value) throws InvalidExpressionException {
+        final String valueOf = String.valueOf(value);
+        return createConstantExpression(name, valueOf, Long.class);
+    }
+
     public Expression createConstantIntegerExpression(final int value) throws InvalidExpressionException {
         final String valueOf = String.valueOf(value);
         return createConstantExpression(valueOf, valueOf, Integer.class);
