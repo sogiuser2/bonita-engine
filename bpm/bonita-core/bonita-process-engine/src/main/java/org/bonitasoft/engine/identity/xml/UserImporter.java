@@ -55,9 +55,9 @@ public class UserImporter {
     }
 
     public Map<String, SUser> importUsers(final List<ExportedUser> usersToImport) throws SBonitaException {
-        final Map<String, SUser> userNameToSUsers = new HashMap<String, SUser>((int) Math.min(Integer.MAX_VALUE, identityService.getNumberOfUsers()));
+        final Map<String, SUser> userNameToSUsers = new HashMap<>((int) Math.min(Integer.MAX_VALUE, identityService.getNumberOfUsers()));
         for (final ExportedUser userToImport : usersToImport) {
-            SUser sUser = null;
+            SUser sUser;
             if (hasUserWithUserName(userToImport.getUserName())) {
                 sUser = identityService.getUserByUserName(userToImport.getUserName());
                 strategy.foundExistingUser(sUser, userToImport);
@@ -80,7 +80,7 @@ public class UserImporter {
     private SUser addAllUserInfo(final ExportedUser userToImport) throws SBonitaException {
         final SUser persistedUser = addUser(userToImport);
         addContactInfo(userToImport, persistedUser);
-        infoValueImporter.imporCustomUserInfoValues(userToImport.getCustomUserInfoValues(), persistedUser.getId());
+        infoValueImporter.importCustomUserInfoValues(userToImport.getCustomUserInfoValues(), persistedUser.getId());
         return persistedUser;
     }
 

@@ -101,7 +101,7 @@ public class OrganizationIT extends TestWithTechnicalUser {
         importOrganization("simpleOrganization.xml");
 
         // then
-        final Map<String, CustomUserInfoDefinition> userInfoDefinitonsMap = checkDefaultCustomUserInfoDefinitons();
+        final Map<String, CustomUserInfoDefinition> userInfoDefinitonsMap = checkDefaultCustomUserInfoDefinitions();
         checkDefaultUsers();
         checkDefaultCustomUserInfoValues(userInfoDefinitonsMap);
         checkDefaultGroups();
@@ -160,12 +160,12 @@ public class OrganizationIT extends TestWithTechnicalUser {
     }
 
     private void checkCustomUserInfo(final CustomUserInfoValue customUserInfoValue, final String expectedName, final String expectedValue,
-            final Map<String, CustomUserInfoDefinition> userInfoDefinitonsMap) {
-        assertThat(customUserInfoValue.getDefinitionId()).isEqualTo(userInfoDefinitonsMap.get(expectedName).getId());
+            final Map<String, CustomUserInfoDefinition> userInfoDefinitionMap) {
+        assertThat(customUserInfoValue.getDefinitionId()).isEqualTo(userInfoDefinitionMap.get(expectedName).getId());
         assertThat(customUserInfoValue.getValue()).isEqualTo(expectedValue);
     }
 
-    private Map<String, CustomUserInfoDefinition> checkDefaultCustomUserInfoDefinitons() {
+    private Map<String, CustomUserInfoDefinition> checkDefaultCustomUserInfoDefinitions() {
         final List<CustomUserInfoDefinition> customUserInfoDefinitions = getIdentityAPI().getCustomUserInfoDefinitions(0, 10);
         assertThat(customUserInfoDefinitions.size()).isEqualTo(2);
 
@@ -175,13 +175,13 @@ public class OrganizationIT extends TestWithTechnicalUser {
         checkCustomUserInfoDefinition(LOCATION_NAME, null, firstDefinition);
         checkCustomUserInfoDefinition(SKILLS_NAME, SKILLS_DESCRIPTION, secondDefinition);
 
-        final Map<String, CustomUserInfoDefinition> userInfoDefMap = new HashMap<String, CustomUserInfoDefinition>(2);
+        final Map<String, CustomUserInfoDefinition> userInfoDefMap = new HashMap<>(2);
         userInfoDefMap.put(firstDefinition.getName(), firstDefinition);
         userInfoDefMap.put(secondDefinition.getName(), secondDefinition);
         return userInfoDefMap;
     }
 
-    private Map<String, CustomUserInfoDefinition> checkCustomUserInfoDefinitonsAfterUpdate() {
+    private Map<String, CustomUserInfoDefinition> checkCustomUserInfoDefinitionsAfterUpdate() {
         final List<CustomUserInfoDefinition> customUserInfoDefinitions = getIdentityAPI().getCustomUserInfoDefinitions(0, 10);
         assertThat(customUserInfoDefinitions.size()).isEqualTo(2);
 
@@ -191,7 +191,7 @@ public class OrganizationIT extends TestWithTechnicalUser {
         checkCustomUserInfoDefinition(LOCATION_NAME, "The office location", firstDefinition);
         checkCustomUserInfoDefinition(SKILLS_NAME, "The user skills were updated", secondDefinition);
 
-        final Map<String, CustomUserInfoDefinition> userInfoDefMap = new HashMap<String, CustomUserInfoDefinition>(2);
+        final Map<String, CustomUserInfoDefinition> userInfoDefMap = new HashMap<>(2);
         userInfoDefMap.put(firstDefinition.getName(), firstDefinition);
         userInfoDefMap.put(secondDefinition.getName(), secondDefinition);
         return userInfoDefMap;
@@ -282,12 +282,9 @@ public class OrganizationIT extends TestWithTechnicalUser {
     @Test
     public void importComplexOrganization() throws Exception {
         // create XML file
-        final InputStream xmlStream = OrganizationIT.class.getResourceAsStream("complexOrganization.xml");
-        try {
+        try (InputStream xmlStream = OrganizationIT.class.getResourceAsStream("complexOrganization.xml")) {
             final byte[] organisationContent = IOUtils.toByteArray(xmlStream);
             getIdentityAPI().importOrganization(new String(organisationContent));
-        } finally {
-            xmlStream.close();
         }
         final User jack = getIdentityAPI().getUserByUserName("jack");
         final User john = getIdentityAPI().getUserByUserName("john");
@@ -347,48 +344,44 @@ public class OrganizationIT extends TestWithTechnicalUser {
         getIdentityAPI().deleteOrganization();
     }
 
-    @Cover(classes = { IdentityAPI.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Import", "Organization" }, story = "import same organization twice work", jira = "")
+    @Cover(classes = { IdentityAPI.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Import",
+            "Organization" }, story = "import same organization twice work", jira = "")
     @Test
-    public void importACMEOrganizationTwiceWithDefaultProfile() throws Exception {
+    public void importACMEOrganizationTwiceWithDefaultPolicy() throws Exception {
         // create XML file
 
-        final InputStream xmlStream = OrganizationIT.class.getResourceAsStream("ACME.xml");
-        try {
+        try (InputStream xmlStream = OrganizationIT.class.getResourceAsStream("ACME.xml")) {
             final byte[] organisationContent = IOUtils.toByteArray(xmlStream);
             getIdentityAPI().importOrganization(new String(organisationContent));
             getIdentityAPI().importOrganization(new String(organisationContent));
-        } finally {
-            xmlStream.close();
         }
 
         // clean-up
         getIdentityAPI().deleteOrganization();
     }
 
-    @Cover(classes = { IdentityAPI.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Import", "Organization" }, story = "import same organization twice work even if some elements are removed", jira = "ENGINE-916")
+    @Cover(classes = { IdentityAPI.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Import",
+            "Organization" }, story = "import same organization twice work even if some elements are removed", jira = "ENGINE-916")
     @Test
     public void importACMEOrganizationTwiceButRemoveGroupsAndRole() throws Exception {
         // create XML file
 
-        final InputStream xmlStream = OrganizationIT.class.getResourceAsStream("ACME.xml");
         final byte[] organisationContent;
-        try {
+        try (InputStream xmlStream = OrganizationIT.class.getResourceAsStream("ACME.xml")) {
             organisationContent = IOUtils.toByteArray(xmlStream);
-        } finally {
-            xmlStream.close();
         }
         getIdentityAPI().importOrganization(new String(organisationContent));
         final long numberOfGroups = getIdentityAPI().getNumberOfGroups();
         final long numberOfRoles = getIdentityAPI().getNumberOfRoles();
         // remove some groups and roles
         final List<Group> groups = getIdentityAPI().getGroups(1, 3, GroupCriterion.NAME_ASC);
-        final List<Long> groupIds = new ArrayList<Long>(groups.size());
+        final List<Long> groupIds = new ArrayList<>(groups.size());
         for (final Group group : groups) {
             groupIds.add(group.getId());
         }
         getIdentityAPI().deleteGroups(groupIds);
         final List<Role> roles = getIdentityAPI().getRoles(0, 2, RoleCriterion.NAME_ASC);
-        final List<Long> roleIds = new ArrayList<Long>(roles.size());
+        final List<Long> roleIds = new ArrayList<>(roles.size());
         for (final Role role : roles) {
             roleIds.add(role.getId());
         }
@@ -416,7 +409,8 @@ public class OrganizationIT extends TestWithTechnicalUser {
         }
     }
 
-    @Cover(classes = { IdentityAPI.class, User.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Import", "Organization", "User" }, story = "check that import fail restore to previous state the organization", jira = "")
+    @Cover(classes = { IdentityAPI.class, User.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Import", "Organization",
+            "User" }, story = "check that import fail restore to previous state the organization", jira = "")
     @Test(expected = OrganizationImportException.class)
     public void importOrganizationFailRollBackToOldOrganization() throws Exception {
         final InputStream xmlStream = OrganizationIT.class.getResourceAsStream("organizationFailOnDuplicates.xml");
@@ -465,8 +459,7 @@ public class OrganizationIT extends TestWithTechnicalUser {
 
     @Test
     public void importOrganizationWithCycle() throws Exception {
-        final InputStream xmlStream = OrganizationIT.class.getResourceAsStream("organizationWithCycle.xml");
-        try {
+        try (InputStream xmlStream = OrganizationIT.class.getResourceAsStream("organizationWithCycle.xml")) {
             final byte[] bs = IOUtils.toByteArray(xmlStream);
             final String organizationContent = new String(bs);
             getIdentityAPI().importOrganization(organizationContent);
@@ -474,8 +467,6 @@ public class OrganizationIT extends TestWithTechnicalUser {
             // clean-up
             getIdentityAPI().deleteOrganization();
             getIdentityAPI().importOrganization(organizationContent);
-        } finally {
-            xmlStream.close();
         }
 
         final List<User> users = getIdentityAPI().getUsers(0, 10, UserCriterion.USER_NAME_ASC);
@@ -485,9 +476,10 @@ public class OrganizationIT extends TestWithTechnicalUser {
         getIdentityAPI().deleteOrganization();
     }
 
-    @Cover(classes = { ActorMember.class, Group.class, Role.class, User.class }, concept = BPMNConcept.ORGANIZATION, jira = "ENGINE-808, ENGINE-1635", keywords = {
-            "Delete", "Organization", "Actor member", "User", "Group", "Role", "User membership", "Profile member", "Supervisor",
-            "External identity mapping", "Pending mapping " })
+    @Cover(classes = { ActorMember.class, Group.class, Role.class,
+            User.class }, concept = BPMNConcept.ORGANIZATION, jira = "ENGINE-808, ENGINE-1635", keywords = {
+                    "Delete", "Organization", "Actor member", "User", "Group", "Role", "User membership", "Profile member", "Supervisor",
+                    "External identity mapping", "Pending mapping " })
     @Test
     public void deleteOrganization() throws Exception {
         // Create records for user role, group and membership
@@ -593,7 +585,8 @@ public class OrganizationIT extends TestWithTechnicalUser {
         }
     }
 
-    @Cover(classes = { IdentityAPI.class, ImportPolicy.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Organization", "Import", "Policy" }, story = "Import a new organization keep the old, if duplicates elements fail import", jira = "ENGINE-428")
+    @Cover(classes = { IdentityAPI.class, ImportPolicy.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Organization", "Import",
+            "Policy" }, story = "Import a new organization keep the old, if duplicates elements fail import", jira = "ENGINE-428")
     @Test(expected = OrganizationImportException.class)
     public void importOrganizationFailOnDuplicates() throws Exception {
         // create XML file
@@ -675,7 +668,8 @@ public class OrganizationIT extends TestWithTechnicalUser {
         fail("This statement shouldn't be reached.");
     }
 
-    @Cover(classes = { IdentityAPI.class, ImportPolicy.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Organization", "Import", "Policy" }, story = "Import a new organization keep the old, no duplicates elements", jira = "ENGINE-428")
+    @Cover(classes = { IdentityAPI.class, ImportPolicy.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Organization", "Import",
+            "Policy" }, story = "Import a new organization keep the old, no duplicates elements", jira = "ENGINE-428")
     @Test
     public void importOrganizationFailOnDuplicatesNoDuplicates() throws Exception {
         // create XML file
@@ -760,7 +754,8 @@ public class OrganizationIT extends TestWithTechnicalUser {
 
     }
 
-    @Cover(classes = { IdentityAPI.class, ImportPolicy.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Organization", "Import", "Policy" }, story = "Import a new organization keep the old, if duplicates elements replace existing ones, add new elements", jira = "ENGINE-428")
+    @Cover(classes = { IdentityAPI.class, ImportPolicy.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Organization", "Import",
+            "Policy" }, story = "Import a new organization keep the old, if duplicates elements replace existing ones, add new elements", jira = "ENGINE-428")
     @Test
     public void importOrganizationMergeDuplicates() throws Exception {
         // given
@@ -771,7 +766,7 @@ public class OrganizationIT extends TestWithTechnicalUser {
         importOrganizationWithPolicy("simpleOrganizationDuplicates2.xml", policy);
 
         // then
-        final Map<String, CustomUserInfoDefinition> infoDefinitonsAfterUpdate = checkCustomUserInfoDefinitonsAfterUpdate();
+        final Map<String, CustomUserInfoDefinition> infoDefinitonsAfterUpdate = checkCustomUserInfoDefinitionsAfterUpdate();
         checkUsersAfterUpdate();
         checkCustomUserInfoValuesAfterUpdate(infoDefinitonsAfterUpdate);
         checkGroupsAfterUpdate();
@@ -889,7 +884,8 @@ public class OrganizationIT extends TestWithTechnicalUser {
         getIdentityAPI().deleteGroup(getIdentityAPI().getGroupByPath(WEB_GROUP_NAME).getId());
     }
 
-    @Cover(classes = { IdentityAPI.class, ImportPolicy.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Organization", "Import", "Policy" }, story = "Import a new organization keep the old, if duplicates elements keep existing ones, add new elements", jira = "ENGINE-428")
+    @Cover(classes = { IdentityAPI.class, ImportPolicy.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Organization", "Import",
+            "Policy" }, story = "Import a new organization keep the old, if duplicates elements keep existing ones, add new elements", jira = "ENGINE-428")
     @Test
     public void importOrganizationIgnoreDuplicates() throws Exception {
         // create XML file
@@ -1019,12 +1015,9 @@ public class OrganizationIT extends TestWithTechnicalUser {
     }
 
     private void importOrganizationWithPolicy(final String xmlFile, final ImportPolicy policy) throws Exception {
-        final InputStream xmlStream = OrganizationIT.class.getResourceAsStream(xmlFile);
-        try {
+        try (InputStream xmlStream = OrganizationIT.class.getResourceAsStream(xmlFile)) {
             final String organizationContent = IOUtils.toString(xmlStream);
             getIdentityAPI().importOrganization(organizationContent, policy);
-        } finally {
-            xmlStream.close();
         }
     }
 
@@ -1033,7 +1026,7 @@ public class OrganizationIT extends TestWithTechnicalUser {
         importOrganization("simpleOrganizationDuplicates1.xml");
 
         // then
-        final Map<String, CustomUserInfoDefinition> userInfoDefinitons = checkDefaultCustomUserInfoDefinitons();
+        final Map<String, CustomUserInfoDefinition> userInfoDefinitons = checkDefaultCustomUserInfoDefinitions();
         checkDefaultUsers();
         checkDefaultCustomUserInfoValues(userInfoDefinitons);
         checkDefaultGroups();
@@ -1136,7 +1129,8 @@ public class OrganizationIT extends TestWithTechnicalUser {
         getIdentityAPI().deleteOrganization();
     }
 
-    @Cover(classes = { IdentityAPI.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Export", "Organization", "Special characters" }, jira = "ENGINE-1517")
+    @Cover(classes = { IdentityAPI.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Export", "Organization",
+            "Special characters" }, jira = "ENGINE-1517")
     @Test
     public void exportOrganizationWithSpecialCharacters() throws Exception {
         // create records for user role, group and membership
@@ -1165,38 +1159,38 @@ public class OrganizationIT extends TestWithTechnicalUser {
 
         // Role
         for (final Entry<RoleField, Serializable> entry : roleCreator.getFields().entrySet()) {
-            assertTrue(organizationContent.indexOf((String) entry.getValue()) != -1);
+            assertTrue(organizationContent.contains((String) entry.getValue()));
         }
 
         // Group
         for (final Entry<GroupField, Serializable> entry : groupCreator.getFields().entrySet()) {
-            assertTrue(organizationContent.indexOf((String) entry.getValue()) != -1);
+            assertTrue(organizationContent.contains((String) entry.getValue()));
         }
 
         // User
-        assertTrue(organizationContent.indexOf("Céline*^$") != -1);
-        assertTrue(organizationContent.indexOf("ééééééééééééééééééé") != -1);
+        assertTrue(organizationContent.contains("Céline*^$"));
+        assertTrue(organizationContent.contains("ééééééééééééééééééé"));
 
         // UserMembership
-        assertTrue(organizationContent.indexOf(getIdentityAPI().getUserMembership(membership.getId()).getGroupName()) != -1);
+        assertTrue(organizationContent.contains(getIdentityAPI().getUserMembership(membership.getId()).getGroupName()));
 
         // Verify all tags
-        assertTrue(organizationContent.indexOf("<organization:Organization") != -1);
-        assertTrue(organizationContent.indexOf("<users>") != -1);
-        assertTrue(organizationContent.indexOf("<user") != -1);
-        assertTrue(organizationContent.indexOf("</user>") != -1);
-        assertTrue(organizationContent.indexOf("</users>") != -1);
-        assertTrue(organizationContent.indexOf("<roles>") != -1);
-        assertTrue(organizationContent.indexOf("<role") != -1);
-        assertTrue(organizationContent.indexOf("</role>") != -1);
-        assertTrue(organizationContent.indexOf("</roles>") != -1);
-        assertTrue(organizationContent.indexOf("<groups>") != -1);
-        assertTrue(organizationContent.indexOf("<group") != -1);
-        assertTrue(organizationContent.indexOf("</group>") != -1);
-        assertTrue(organizationContent.indexOf(" </groups>") != -1);
-        assertTrue(organizationContent.indexOf("<memberships") != -1);
-        assertTrue(organizationContent.indexOf("</memberships>") != -1);
-        assertTrue(organizationContent.indexOf("</organization:Organization>") != -1);
+        assertTrue(organizationContent.contains("<organization:Organization"));
+        assertTrue(organizationContent.contains("<users>"));
+        assertTrue(organizationContent.contains("<user"));
+        assertTrue(organizationContent.contains("</user>"));
+        assertTrue(organizationContent.contains("</users>"));
+        assertTrue(organizationContent.contains("<roles>"));
+        assertTrue(organizationContent.contains("<role"));
+        assertTrue(organizationContent.contains("</role>"));
+        assertTrue(organizationContent.contains("</roles>"));
+        assertTrue(organizationContent.contains("<groups>"));
+        assertTrue(organizationContent.contains("<group"));
+        assertTrue(organizationContent.contains("</group>"));
+        assertTrue(organizationContent.contains(" </groups>"));
+        assertTrue(organizationContent.contains("<memberships"));
+        assertTrue(organizationContent.contains("</memberships>"));
+        assertTrue(organizationContent.contains("</organization:Organization>"));
 
         // clean-up
         deleteUsers(user, user2);
@@ -1204,7 +1198,8 @@ public class OrganizationIT extends TestWithTechnicalUser {
         getIdentityAPI().deleteGroup(group.getId());
     }
 
-    @Cover(classes = { IdentityAPI.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Import", "Export", "Organization", "Special characters" }, jira = "ENGINE-1517")
+    @Cover(classes = { IdentityAPI.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Import", "Export", "Organization",
+            "Special characters" }, jira = "ENGINE-1517")
     @Test
     public void importAndExportOrganizationWithSpecialCharacters() throws Exception {
         importOrganization("OrganizationWithSpecialCharacters.xml");
@@ -1213,30 +1208,30 @@ public class OrganizationIT extends TestWithTechnicalUser {
         final String organizationContent = getIdentityAPI().exportOrganization();
 
         // Role
-        assertTrue(organizationContent.indexOf("ééé") != -1);
+        assertTrue(organizationContent.contains("ééé"));
 
         // Group
-        assertTrue(organizationContent.indexOf("ééééééééé") != -1);
+        assertTrue(organizationContent.contains("ééééééééé"));
 
         // User
-        assertTrue(organizationContent.indexOf("éé") != -1);
+        assertTrue(organizationContent.contains("éé"));
 
         // Verify all tags
-        assertTrue(organizationContent.indexOf("<organization:Organization") != -1);
-        assertTrue(organizationContent.indexOf("<users>") != -1);
-        assertTrue(organizationContent.indexOf("<user") != -1);
-        assertTrue(organizationContent.indexOf("</user>") != -1);
-        assertTrue(organizationContent.indexOf("</users>") != -1);
-        assertTrue(organizationContent.indexOf("<roles>") != -1);
-        assertTrue(organizationContent.indexOf("<role") != -1);
-        assertTrue(organizationContent.indexOf("</role>") != -1);
-        assertTrue(organizationContent.indexOf("</roles>") != -1);
-        assertTrue(organizationContent.indexOf("<groups>") != -1);
-        assertTrue(organizationContent.indexOf("<group") != -1);
-        assertTrue(organizationContent.indexOf("</group>") != -1);
-        assertTrue(organizationContent.indexOf(" </groups>") != -1);
-        assertTrue(organizationContent.indexOf("<memberships/>") != -1);
-        assertTrue(organizationContent.indexOf("</organization:Organization>") != -1);
+        assertTrue(organizationContent.contains("<organization:Organization"));
+        assertTrue(organizationContent.contains("<users>"));
+        assertTrue(organizationContent.contains("<user"));
+        assertTrue(organizationContent.contains("</user>"));
+        assertTrue(organizationContent.contains("</users>"));
+        assertTrue(organizationContent.contains("<roles>"));
+        assertTrue(organizationContent.contains("<role"));
+        assertTrue(organizationContent.contains("</role>"));
+        assertTrue(organizationContent.contains("</roles>"));
+        assertTrue(organizationContent.contains("<groups>"));
+        assertTrue(organizationContent.contains("<group"));
+        assertTrue(organizationContent.contains("</group>"));
+        assertTrue(organizationContent.contains(" </groups>"));
+        assertTrue(organizationContent.contains("<memberships/>"));
+        assertTrue(organizationContent.contains("</organization:Organization>"));
 
         // clean-up
         getIdentityAPI().deleteOrganization();
@@ -1274,12 +1269,12 @@ public class OrganizationIT extends TestWithTechnicalUser {
         // export and check
         final String organizationContent = getIdentityAPI().exportOrganization();
 
-        assertTrue(organizationContent.indexOf(DEVELOPER) != -1);
-        assertTrue(organizationContent.indexOf("Bonita developer") != -1);
-        assertTrue(organizationContent.indexOf(ENGINE) != -1);
-        assertTrue(organizationContent.indexOf("engine team") != -1);
-        assertTrue(organizationContent.indexOf(getIdentityAPI().getUserMembership(membership1.getId()).getGroupName()) != -1);
-        assertTrue(organizationContent.indexOf(getIdentityAPI().getUserMembership(membership2.getId()).getGroupName()) != -1);
+        assertTrue(organizationContent.contains(DEVELOPER));
+        assertTrue(organizationContent.contains("Bonita developer"));
+        assertTrue(organizationContent.contains(ENGINE));
+        assertTrue(organizationContent.contains("engine team"));
+        assertTrue(organizationContent.contains(getIdentityAPI().getUserMembership(membership1.getId()).getGroupName()));
+        assertTrue(organizationContent.contains(getIdentityAPI().getUserMembership(membership2.getId()).getGroupName()));
 
         // clean-up
         getIdentityAPI().deleteUser(persistedUser1.getId());
@@ -1305,7 +1300,8 @@ public class OrganizationIT extends TestWithTechnicalUser {
         }
     }
 
-    @Cover(classes = { IdentityAPI.class, User.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Export", "Organization", "Disabled", "User" }, jira = "ENGINE-577")
+    @Cover(classes = { IdentityAPI.class, User.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Export", "Organization", "Disabled",
+            "User" }, jira = "ENGINE-577")
     @Test
     public void exportOrganizationWithDisabledUsers() throws Exception {
         // create records for user
@@ -1316,13 +1312,14 @@ public class OrganizationIT extends TestWithTechnicalUser {
 
         // export and check
         final String organizationContent = getIdentityAPI().exportOrganization();
-        assertTrue(organizationContent.indexOf("false") != -1);
+        assertTrue(organizationContent.contains("false"));
 
         // clean-up
         getIdentityAPI().deleteUser(persistedUser.getId());
     }
 
-    @Cover(classes = { IdentityAPI.class, User.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Export", "Organization", "Enabled", "User" }, jira = "ENGINE-577")
+    @Cover(classes = { IdentityAPI.class, User.class }, concept = BPMNConcept.ORGANIZATION, keywords = { "Export", "Organization", "Enabled",
+            "User" }, jira = "ENGINE-577")
     @Test
     public void exportOrganizationWithEnabledUsers() throws Exception {
         // create records for user
@@ -1332,7 +1329,7 @@ public class OrganizationIT extends TestWithTechnicalUser {
 
         // export and check
         final String organizationContent = getIdentityAPI().exportOrganization();
-        assertTrue(organizationContent.indexOf("true") != -1);
+        assertTrue(organizationContent.contains("true"));
 
         // clean-up
         getIdentityAPI().deleteUser(persistedUser.getId());

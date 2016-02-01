@@ -28,7 +28,6 @@ import org.bonitasoft.engine.identity.IdentityService;
 import org.bonitasoft.engine.identity.RoleCreator;
 import org.bonitasoft.engine.identity.RoleCreator.RoleField;
 import org.bonitasoft.engine.identity.SIdentityException;
-import org.bonitasoft.engine.identity.SUserCreationException;
 import org.bonitasoft.engine.identity.model.SContactInfo;
 import org.bonitasoft.engine.identity.model.SCustomUserInfoDefinition;
 import org.bonitasoft.engine.identity.model.SGroup;
@@ -89,7 +88,7 @@ public class ImportOrganizationMergeDuplicatesStrategy implements ImportOrganiza
         }
     }
 
-    private void createOrUpdateProfessionalContactInfo(final ExportedUser user, final long userId) throws SIdentityException, SUserCreationException {
+    private void createOrUpdateProfessionalContactInfo(final ExportedUser user, final long userId) throws SIdentityException {
         SContactInfo professContactInfo = identityService.getUserContactInfo(userId, false);
         if (professContactInfo == null) {
             professContactInfo = BuilderFactory.get(SContactInfoBuilderFactory.class).createNewInstance(userId, false).done();
@@ -99,14 +98,14 @@ public class ImportOrganizationMergeDuplicatesStrategy implements ImportOrganiza
         identityService.updateUserContactInfo(professContactInfo, professionalDataDesc);
     }
 
-    private void createOrUpdatePersonalContactInfo(final ExportedUser user, final long userId) throws SIdentityException, SUserCreationException {
-        SContactInfo persoContactInfo = identityService.getUserContactInfo(userId, true);
-        if (persoContactInfo == null) {
-            persoContactInfo = BuilderFactory.get(SContactInfoBuilderFactory.class).createNewInstance(userId, true).done();
-            identityService.createUserContactInfo(persoContactInfo);
+    private void createOrUpdatePersonalContactInfo(final ExportedUser user, final long userId) throws SIdentityException {
+        SContactInfo personalContactInfo = identityService.getUserContactInfo(userId, true);
+        if (personalContactInfo == null) {
+            personalContactInfo = BuilderFactory.get(SContactInfoBuilderFactory.class).createNewInstance(userId, true).done();
+            identityService.createUserContactInfo(personalContactInfo);
         }
         final EntityUpdateDescriptor personalDataDesc = getUserContactInfoDescriptor(user, true);
-        identityService.updateUserContactInfo(persoContactInfo, personalDataDesc);
+        identityService.updateUserContactInfo(personalContactInfo, personalDataDesc);
     }
 
     @Override

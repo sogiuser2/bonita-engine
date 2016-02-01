@@ -82,7 +82,7 @@ public class CustomUserInfoValueImporterTest {
         customUserInfoValues.add(new ExportedCustomUserInfoValue(LOCATION_NAME, LOCATION_VALUE));
 
         // when
-        importer.imporCustomUserInfoValues(customUserInfoValues, USER_ID);
+        importer.importCustomUserInfoValues(customUserInfoValues, USER_ID);
 
         // then
         verify(infoAPI, times(1)).set(SKILLS_ID, USER_ID, SKILLS_VALUE);
@@ -97,7 +97,7 @@ public class CustomUserInfoValueImporterTest {
 
         try {
             // when
-            importer.imporCustomUserInfoValues(Arrays.asList(invalidValue), USER_ID);
+            importer.importCustomUserInfoValues(Arrays.asList(invalidValue), USER_ID);
             fail("exception expected");
         } catch (SImportOrganizationException e) {
             // then

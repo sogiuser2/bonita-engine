@@ -124,7 +124,7 @@ public class UserImporterTest {
         importer.importUsers(Arrays.asList(userToImport));
 
         // then
-        verify(userInfoValueImporter, times(1)).imporCustomUserInfoValues(Arrays.asList(skillsValue, locationValue), USER_ID);
+        verify(userInfoValueImporter, times(1)).importCustomUserInfoValues(Arrays.asList(skillsValue, locationValue), USER_ID);
     }
 
     @Test
@@ -137,7 +137,7 @@ public class UserImporterTest {
         importer.importUsers(Arrays.asList(userToImport));
 
         // then
-        verify(userInfoValueImporter, never()).imporCustomUserInfoValues(Matchers.<List<ExportedCustomUserInfoValue>> any(), anyLong());
+        verify(userInfoValueImporter, never()).importCustomUserInfoValues(Matchers.<List<ExportedCustomUserInfoValue>> any(), anyLong());
     }
 
 }

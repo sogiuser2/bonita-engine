@@ -13,7 +13,6 @@
  **/
 package org.bonitasoft.engine.identity.xml;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.io.StringReader;
@@ -27,7 +26,6 @@ import org.bonitasoft.engine.api.impl.SCustomUserInfoValueAPI;
 import org.bonitasoft.engine.api.impl.SessionInfos;
 import org.bonitasoft.engine.builder.BuilderFactory;
 import org.bonitasoft.engine.commons.exceptions.SBonitaException;
-import org.bonitasoft.engine.commons.exceptions.SBonitaRuntimeException;
 import org.bonitasoft.engine.commons.transaction.TransactionContentWithResult;
 import org.bonitasoft.engine.identity.CustomUserInfoDefinitionCreator;
 import org.bonitasoft.engine.identity.ExportedUser;
@@ -125,8 +123,7 @@ public class ImportOrganization implements TransactionContentWithResult<List<Str
 
     @Override
     public void execute() throws SBonitaException {
-        final InputStream resourceAsStream = this.getClass().getResourceAsStream("/bos-organization.xsd");
-        try {
+        try (InputStream resourceAsStream = this.getClass().getResourceAsStream("/bos-organization.xsd")) {
             parser.setSchema(resourceAsStream);
             parser.validate(new StringReader(organizationContent));
             final OrganizationCreator organization = (OrganizationCreator) parser.getObjectFromXML(new StringReader(organizationContent));
@@ -155,12 +152,6 @@ public class ImportOrganization implements TransactionContentWithResult<List<Str
             throw e;
         } catch (final Exception e) {
             throw new SImportOrganizationException(e);
-        } finally {
-            try {
-                resourceAsStream.close();
-            } catch (final IOException e) {
-                throw new SBonitaRuntimeException(e);
-            }
         }
     }
 

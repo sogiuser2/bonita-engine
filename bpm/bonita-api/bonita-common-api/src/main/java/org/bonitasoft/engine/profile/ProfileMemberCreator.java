@@ -19,6 +19,7 @@ import java.util.Map;
 
 /**
  * @author Celine Souchet
+ * @author Emmanuel Duchastenier
  */
 public class ProfileMemberCreator implements Serializable {
 
@@ -31,7 +32,7 @@ public class ProfileMemberCreator implements Serializable {
     private final Map<ProfileMemberField, Serializable> fields;
 
     public ProfileMemberCreator(final long profileId) {
-        fields = new HashMap<ProfileMemberField, Serializable>(5);
+        fields = new HashMap<>(4);
         fields.put(ProfileMemberField.PROFILE_ID, profileId);
     }
 
