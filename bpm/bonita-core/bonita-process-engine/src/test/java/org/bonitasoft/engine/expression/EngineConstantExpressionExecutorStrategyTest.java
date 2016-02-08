@@ -121,7 +121,7 @@ public class EngineConstantExpressionExecutorStrategyTest {
         when(expression.getContent()).thenReturn(ExpressionConstants.TASK_ASSIGNEE_ID.getEngineConstantName());
 
         final EngineConstantExpressionExecutorStrategy strategy = new EngineConstantExpressionExecutorStrategy(activityInstanceService, null, null, null);
-        final int evaluatedTaskAssigneeId = (Integer) strategy.evaluate(expression, dependencyValues, Collections.<Integer, Object> emptyMap(),
+        final Serializable evaluatedTaskAssigneeId = strategy.evaluate(expression, dependencyValues, Collections.<Integer, Object> emptyMap(),
                 ContainerState.ACTIVE);
         assertEquals(-1L, evaluatedTaskAssigneeId);
 
