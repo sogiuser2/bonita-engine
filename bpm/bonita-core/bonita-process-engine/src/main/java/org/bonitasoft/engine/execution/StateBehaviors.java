@@ -316,7 +316,8 @@ public class StateBehaviors {
 
     void mapUsingUserFilters(final SFlowNodeInstance flowNodeInstance, final SHumanTaskDefinition humanTaskDefinition, final String actorName,
             final long processDefinitionId, final SUserFilterDefinition sUserFilterDefinition) throws SClassLoaderException, SUserFilterExecutionException,
-            SActivityStateExecutionException, SActivityCreationException, SFlowNodeNotFoundException, SFlowNodeReadException, SActivityModificationException {
+                    SActivityStateExecutionException, SActivityCreationException, SFlowNodeNotFoundException, SFlowNodeReadException,
+                    SActivityModificationException {
         final ClassLoader processClassloader = classLoaderService.getLocalClassLoader(ScopeType.PROCESS.name(), processDefinitionId);
         final SExpressionContext expressionContext = new SExpressionContext(flowNodeInstance.getId(), DataInstanceContainer.ACTIVITY_INSTANCE.name(),
                 flowNodeInstance.getLogicalGroup(0));
@@ -339,7 +340,8 @@ public class StateBehaviors {
         }
     }
 
-    public void handleCatchEvents(final SProcessDefinition processDefinition, final SFlowNodeInstance flowNodeInstance) throws SActivityStateExecutionException {
+    public void handleCatchEvents(final SProcessDefinition processDefinition, final SFlowNodeInstance flowNodeInstance)
+            throws SActivityStateExecutionException {
         // handle catch event
         if (flowNodeInstance instanceof SIntermediateCatchEventInstance) {
             final SCatchEventInstance intermediateCatchEventInstance = (SCatchEventInstance) flowNodeInstance;
@@ -393,33 +395,31 @@ public class StateBehaviors {
      */
     public BEntry<Integer, BEntry<SConnectorInstance, SConnectorDefinition>> getConnectorToExecuteAndFlag(final SProcessDefinition processDefinition,
             final SFlowNodeInstance flowNodeInstance, final boolean executeConnectorsOnEnter, final boolean executeConnectorsOnFinish)
-            throws SActivityStateExecutionException {
+                    throws SActivityStateExecutionException {
         try {
             final SFlowElementContainerDefinition processContainer = processDefinition.getProcessContainer();
             final SFlowNodeDefinition flowNodeDefinition = processContainer.getFlowNode(flowNodeInstance.getFlowNodeDefinitionId());
-            if (flowNodeDefinition != null) {
-                boolean onEnterExecuted = false;
-                final List<SConnectorDefinition> connectorsOnEnter = flowNodeDefinition.getConnectors(ConnectorEvent.ON_ENTER);
-                if (connectorsOnEnter.size() > 0 && executeConnectorsOnEnter) {
-                    final BEntry<Integer, BEntry<SConnectorInstance, SConnectorDefinition>> connectorToExecuteOnEnter = getConnectorToExecuteOnEnter(
-                            flowNodeInstance, connectorsOnEnter);
-                    if (connectorToExecuteOnEnter != null) {
-                        return connectorToExecuteOnEnter;
-                    }
-                    // All connectors ON ENTER have already been executed:
-                    onEnterExecuted = true;
+            boolean onEnterExecuted = false;
+            final List<SConnectorDefinition> connectorsOnEnter = flowNodeDefinition.getConnectors(ConnectorEvent.ON_ENTER);
+            if (connectorsOnEnter.size() > 0 && executeConnectorsOnEnter) {
+                final BEntry<Integer, BEntry<SConnectorInstance, SConnectorDefinition>> connectorToExecuteOnEnter = getConnectorToExecuteOnEnter(
+                        flowNodeInstance, connectorsOnEnter);
+                if (connectorToExecuteOnEnter != null) {
+                    return connectorToExecuteOnEnter;
                 }
-                // no on enter connector to execute
-                final BEntry<Integer, BEntry<SConnectorInstance, SConnectorDefinition>> connectorToExecuteOnFinish = getConnectorToExecuteOnFinish(
-                        flowNodeDefinition, flowNodeInstance, executeConnectorsOnFinish, onEnterExecuted);
-                if (connectorToExecuteOnFinish != null) {
-                    return connectorToExecuteOnFinish;
-                }
-                // no ON ENTER no ON FINISH active
-                if (flowNodeInstance.isStateExecuting()) {
-                    // there was a connector executed but no more: execute only before and after finish
-                    return getConnectorWithFlag(null, null, BEFORE_ON_FINISH | AFTER_ON_FINISH);
-                }
+                // All connectors ON ENTER have already been executed:
+                onEnterExecuted = true;
+            }
+            // no on enter connector to execute
+            final BEntry<Integer, BEntry<SConnectorInstance, SConnectorDefinition>> connectorToExecuteOnFinish = getConnectorToExecuteOnFinish(
+                    flowNodeDefinition, flowNodeInstance, executeConnectorsOnFinish, onEnterExecuted);
+            if (connectorToExecuteOnFinish != null) {
+                return connectorToExecuteOnFinish;
+            }
+            // no ON ENTER no ON FINISH active
+            if (flowNodeInstance.isStateExecuting()) {
+                // there was a connector executed but no more: execute only before and after finish
+                return getConnectorWithFlag(null, null, BEFORE_ON_FINISH | AFTER_ON_FINISH);
             }
             // no connector and was just starting
             return getConnectorWithFlag(null, null, BEFORE_ON_ENTER | BEFORE_ON_FINISH | AFTER_ON_FINISH);
@@ -430,8 +430,8 @@ public class StateBehaviors {
 
     private BEntry<Integer, BEntry<SConnectorInstance, SConnectorDefinition>> getConnectorToExecuteOnFinish(final SFlowNodeDefinition flowNodeDefinition,
             final SFlowNodeInstance flowNodeInstance, final boolean executeConnectorsOnFinish, final boolean onEnterExecuted)
-            throws SConnectorInstanceReadException,
-            SActivityStateExecutionException {
+                    throws SConnectorInstanceReadException,
+                    SActivityStateExecutionException {
         final List<SConnectorDefinition> connectorsOnFinish = flowNodeDefinition.getConnectors(ConnectorEvent.ON_FINISH);
         if (connectorsOnFinish.size() > 0 && executeConnectorsOnFinish) {
             final SConnectorInstance nextConnectorInstanceToExecute = getNextConnectorInstance(flowNodeInstance, ConnectorEvent.ON_FINISH);
@@ -476,7 +476,7 @@ public class StateBehaviors {
 
     private BEntry<Integer, BEntry<SConnectorInstance, SConnectorDefinition>> getConnectorWithFlagIfIsNextToExecute(final SFlowNodeInstance flowNodeInstance,
             final List<SConnectorDefinition> sConnectorDefinitions, final SConnectorInstance nextConnectorInstanceToExecute, final int flag)
-            throws SActivityStateExecutionException {
+                    throws SActivityStateExecutionException {
         for (final SConnectorDefinition sConnectorDefinition : sConnectorDefinitions) {
             if (sConnectorDefinition.getName().equals(nextConnectorInstanceToExecute.getName())) {
                 return getConnectorWithFlag(nextConnectorInstanceToExecute, sConnectorDefinition, flag);
@@ -495,7 +495,7 @@ public class StateBehaviors {
     /**
      * Return next connector instance in state TO_BE_EXECUTED or EXECUTING or TO_RE_EXECUTE for the given ConnectorEvent defined on given flowNodeInstance.
      */
-    private SConnectorInstance getNextConnectorInstance(final SFlowNodeInstance flowNodeInstance, final ConnectorEvent event)
+    public SConnectorInstance getNextConnectorInstance(final SFlowNodeInstance flowNodeInstance, final ConnectorEvent event)
             throws SConnectorInstanceReadException {
         return connectorInstanceService.getNextExecutableConnectorInstance(flowNodeInstance.getId(), SConnectorInstance.FLOWNODE_TYPE, event);
     }
@@ -557,7 +557,7 @@ public class StateBehaviors {
 
     protected void instantiateProcess(final SProcessDefinition callerProcessDefinition, final SCallActivityDefinition callActivityDefinition,
             final SFlowNodeInstance callActivityInstance, final long targetProcessDefinitionId) throws SProcessInstanceCreationException,
-            SContractViolationException, SExpressionException {
+                    SContractViolationException, SExpressionException {
         final long callerProcessDefinitionId = callerProcessDefinition.getId();
         final long callerId = callActivityInstance.getId();
         final List<SOperation> operationList = callActivityDefinition.getDataInputOperations();
@@ -646,7 +646,8 @@ public class StateBehaviors {
         }
     }
 
-    public void executeOperations(final SProcessDefinition processDefinition, final SActivityInstance activityInstance) throws SActivityStateExecutionException {
+    public void executeOperations(final SProcessDefinition processDefinition, final SActivityInstance activityInstance)
+            throws SActivityStateExecutionException {
         try {
             final SFlowElementContainerDefinition processContainer = processDefinition.getProcessContainer();
             final SFlowNodeDefinition flowNode = processContainer.getFlowNode(activityInstance.getFlowNodeDefinitionId());
@@ -722,7 +723,7 @@ public class StateBehaviors {
 
     public void executeConnectorInWork(final Long processDefinitionId, final long processInstanceId, final long flowNodeDefinitionId,
             final long flowNodeInstanceId, final SConnectorInstance connector, final SConnectorDefinition sConnectorDefinition)
-            throws SActivityStateExecutionException {
+                    throws SActivityStateExecutionException {
         final long connectorInstanceId = connector.getId();
         // final Long connectorDefinitionId = sConnectorDefinition.getId();// FIXME: Uncomment when generate id
         final String connectorDefinitionName = sConnectorDefinition.getName();
@@ -767,11 +768,10 @@ public class StateBehaviors {
 
     private void createBoundaryEvent(final SProcessDefinition processDefinition, final SActivityInstance activityInstance, final long rootProcessInstanceId,
             final long parentProcessInstanceId, final SFlowElementsContainerType containerType, final SBoundaryEventDefinition boundaryEventDefinition)
-            throws SBonitaException {
+                    throws SBonitaException {
         final SBoundaryEventInstance boundaryEventInstance = (SBoundaryEventInstance) bpmInstancesCreator.createFlowNodeInstance(processDefinition.getId(),
                 rootProcessInstanceId, activityInstance.getParentContainerId(), containerType, boundaryEventDefinition,
-                rootProcessInstanceId, parentProcessInstanceId, false, -1, SStateCategory.NORMAL, activityInstance.getId()
-                );
+                rootProcessInstanceId, parentProcessInstanceId, false, -1, SStateCategory.NORMAL, activityInstance.getId());
 
         // no need to handle failed state, creation is in the same tx
         containerRegistry.executeFlowNodeInSameThread(parentProcessInstanceId, boundaryEventInstance.getId(), containerType.name());
@@ -795,7 +795,8 @@ public class StateBehaviors {
 
     private boolean isChildOfLoopOrMultiInstance(final SActivityInstance activityInstance, final SActivityDefinition activityDefinition) {
         return activityDefinition.getLoopCharacteristics() != null
-                && !(SFlowNodeType.MULTI_INSTANCE_ACTIVITY.equals(activityInstance.getType()) || SFlowNodeType.LOOP_ACTIVITY.equals(activityInstance.getType()));
+                && !(SFlowNodeType.MULTI_INSTANCE_ACTIVITY.equals(activityInstance.getType())
+                        || SFlowNodeType.LOOP_ACTIVITY.equals(activityInstance.getType()));
     }
 
     public void interruptAttachedBoundaryEvent(final SProcessDefinition processDefinition, final SActivityInstance activityInstance,
@@ -813,8 +814,7 @@ public class StateBehaviors {
                     activityInstanceService.setStateCategory(boundaryEventInstance, categoryState);
                     if (stable) {
                         containerRegistry.executeFlowNode(processDefinition.getId(),
-                                boundaryEventInstance.getLogicalGroup(keyProvider.getParentProcessInstanceIndex()), boundaryEventInstance.getId()
-                        );
+                                boundaryEventInstance.getLogicalGroup(keyProvider.getParentProcessInstanceIndex()), boundaryEventInstance.getId());
                     }
                 }
             }
