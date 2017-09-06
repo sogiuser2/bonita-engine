@@ -12,6 +12,7 @@ import org.bonitasoft.engine.tracking.Record;
 
 /**
  * @author Charles Souillard
+ * TEST
  */
 public class DayRecord {
 
